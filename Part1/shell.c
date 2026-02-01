@@ -6,7 +6,7 @@
 #include "interpreter.h"
 #include "shellmemory.h"
 
-static int parseInput(char ui[]);
+int parseInput(char ui[]);
 
 int main(int argc, char *argv[]) {
     printf("Shell version 1.5 created Dec 2025\n");
@@ -107,7 +107,7 @@ static int runOneCommand(char *cmd) {
     return errorCode;
 }
 
-static int parseInput(char inp[]) {
+int parseInput(char inp[]) {
     // Implement chaining: split the line on ';' and run commands in order
     // Max total input length is already bounded by MAX_USER_INPUT (1000 in the assignment)
     // We will run at most 10 chained commands (as per assignment)
