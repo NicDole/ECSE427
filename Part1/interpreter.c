@@ -4,6 +4,7 @@
 #include <unistd.h>   // chdir
 #include "shellmemory.h"
 #include "shell.h"
+#include <ctype.h>
 
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -30,6 +31,15 @@ int badcommandMyTouch() {
     printf("Bad command: my_touch\n");
     return 1;
 }
+
+int is_alnum_string(char *s) {
+    if (s == NULL || strlen(s) == 0) return 0;
+    for (int i = 0; s[i]; i++) {
+        if (!isalnum(s[i])) return 0;
+    }
+    return 1;
+}
+
 
 int help();
 int quit();
@@ -114,10 +124,13 @@ source SCRIPT.TXT\tExecutes the file SCRIPT.TXT\n \
 echo TOKEN\t\tDisplays TOKEN or variable value\n \
 my_touch FILE\t\tCreates an empty file\n \
 my_cd DIR\t\tChanges the current directory\n \
+my_ls\t\t\tLists files in the current directory\n \
+my_mkdir DIR\t\tCreates a new directory\n \
 run COMMAND ARGS\tExecutes an external command\n ";
     printf("%s\n", help_string);
     return 0;
 }
+
 
 int quit() {
     printf("Bye!\n");
@@ -171,6 +184,9 @@ int my_touch(char *filename) {
         return badcommandMyTouch();
     }
 
+    if (!is_alnum_string(filename)) {
+        return badcommandMyTouch();
+    }
     // Open in append mode to create file if it doesnt exist
     FILE *f = fopen(filename, "a");
     if (f == NULL) {
@@ -182,6 +198,10 @@ int my_touch(char *filename) {
 
 int my_cd(char *dirname) {
     if (dirname == NULL || dirname[0] == '\0') {
+        return badcommandMyCd();
+    }
+
+    if (!is_alnum_string(dirname)) {
         return badcommandMyCd();
     }
 
