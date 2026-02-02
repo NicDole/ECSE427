@@ -219,10 +219,6 @@ int my_cd(char *dirname) {
         return badcommandMyCd();
     }
 
-    if (!is_alnum_string(dirname)) {
-        return badcommandMyCd();
-    }
-
     if (chdir(dirname) != 0) {
         return badcommandMyCd();
     }
@@ -282,10 +278,6 @@ int my_ls() {
 
 int my_mkdir(char *dirname) {
     if (dirname == NULL || dirname[0] == '\0') {
-        return badcommandMyMkdir();
-    }
-
-    if (!is_alnum_string(dirname)) {
         return badcommandMyMkdir();
     }
 
