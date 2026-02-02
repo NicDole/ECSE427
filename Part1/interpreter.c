@@ -5,6 +5,9 @@
 #include "shellmemory.h"
 #include "shell.h"
 
+#include <sys/wait.h>
+#include <sys/types.h>
+
 int MAX_ARGS_SIZE = 3;
 
 int badcommand() {
@@ -12,7 +15,7 @@ int badcommand() {
     return 1;
 }
 
-// For source command only
+// For source command when file doesnt exist
 int badcommandFileDoesNotExist() {
     printf("Bad command: File not found\n");
     return 3;
@@ -37,17 +40,26 @@ int source(char *script);
 int echo_cmd(char *token);
 int my_touch(char *filename);
 int my_cd(char *dirname);
+int run_cmd(char *command_args[], int args_size);
 
-// Interpret commands and their arguments
+// Takes parsed command arguments and routes to the right handler
 int interpreter(char *command_args[], int args_size) {
     int i;
 
-    if (args_size < 1 || args_size > MAX_ARGS_SIZE) {
+    if (args_size < 1) {
         return badcommand();
     }
 
-    for (i = 0; i < args_size; i++) {   // terminate args at newlines
+    // Remove newlines from arguments
+    for (i = 0; i < args_size; i++) {
         command_args[i][strcspn(command_args[i], "\r\n")] = 0;
+    }
+    
+    // Run command can have variable arguments, others cant
+    if (args_size > MAX_ARGS_SIZE) {
+        if (strcmp(command_args[0], "run") != 0) {
+            return badcommand();
+        }
     }
 
     if (strcmp(command_args[0], "help") == 0) {
@@ -82,6 +94,10 @@ int interpreter(char *command_args[], int args_size) {
         if (args_size != 2) return badcommandMyCd();
         return my_cd(command_args[1]);
 
+    } else if (strcmp(command_args[0], "run") == 0) {
+        if (args_size < 2) return badcommand();
+        return run_cmd(command_args, args_size);
+
     } else {
         return badcommand();
     }
@@ -91,13 +107,14 @@ int help() {
     char help_string[] =
         "COMMAND\t\t\tDESCRIPTION\n \
 help\t\t\tDisplays all the commands\n \
-quit\t\t\tExits / terminates the shell with “Bye!”\n \
+quit\t\t\tExits / terminates the shell with \"Bye!\"\n \
 set VAR STRING\t\tAssigns a value to shell memory\n \
 print VAR\t\tDisplays the STRING assigned to VAR\n \
 source SCRIPT.TXT\tExecutes the file SCRIPT.TXT\n \
 echo TOKEN\t\tDisplays TOKEN or variable value\n \
 my_touch FILE\t\tCreates an empty file\n \
-my_cd DIR\t\tChanges the current directory\n ";
+my_cd DIR\t\tChanges the current directory\n \
+run COMMAND ARGS\tExecutes an external command\n ";
     printf("%s\n", help_string);
     return 0;
 }
@@ -118,9 +135,9 @@ int print(char *var) {
 }
 
 int echo_cmd(char *token) {
-    // One token only:
-    // - if token starts with '$', echo prints the variable's value, or a blank line if not found
-    // - otherwise echo prints the token
+    // If token starts with $, print the variable value or blank line if not found
+    // Otherwise just print the token
+    
     if (token == NULL) {
         printf("\n");
         return 0;
@@ -135,7 +152,7 @@ int echo_cmd(char *token) {
 
         char *val = mem_get_value(varname);
 
-        // starter mem_get_value returns this literal when not found
+        // mem_get_value returns this literal when not found
         if (strcmp(val, "Variable does not exist") == 0) {
             printf("\n");
         } else {
@@ -154,7 +171,8 @@ int my_touch(char *filename) {
         return badcommandMyTouch();
     }
 
-    FILE *f = fopen(filename, "a"); // create if doesn't exist
+    // Open in append mode to create file if it doesnt exist
+    FILE *f = fopen(filename, "a");
     if (f == NULL) {
         return badcommandMyTouch();
     }
@@ -195,4 +213,40 @@ int source(char *script) {
 
     fclose(p);
     return errCode;
+}
+
+int run_cmd(char *command_args[], int args_size) {
+    // Use fork-exec-wait to run external commands
+    pid_t pid;
+    int status;
+    
+    if (args_size < 2) {
+        return badcommand();
+    }
+    
+    pid = fork();
+    
+    if (pid < 0) {
+        return badcommand();
+    } else if (pid == 0) {
+        // Child process: execute the command
+        // Build argument array for execvp
+        // execvp needs: [command, arg1, arg2, ..., NULL]
+        char *exec_args[args_size]; // args_size includes "run", so we skip it
+        
+        // Skip "run" (index 0), copy rest of arguments
+        for (int i = 1; i < args_size; i++) {
+            exec_args[i - 1] = command_args[i];
+        }
+        exec_args[args_size - 1] = NULL; // execvp requires NULL terminator
+        
+        execvp(exec_args[0], exec_args);
+        
+        // If execvp returns, it failed
+        exit(1);
+    } else {
+        // Parent process: wait for child to complete
+        wait(&status);
+        return 0;
+    }
 }
