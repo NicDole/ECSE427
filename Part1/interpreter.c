@@ -285,17 +285,14 @@ int my_mkdir(char *dirname) {
         return badcommandMyMkdir();
     }
 
-    char *name_to_make = dirname;
-
-    // Handle $VAR case
+    // If argument is a variable: my_mkdir $VAR
     if (dirname[0] == '$') {
         char *var = dirname + 1;
         if (var[0] == '\0') return badcommandMyMkdir();
 
         char *val = mem_get_value(var);
 
-        // Your mem_get_value returns a newly-allocated string for existing vars
-        // but returns the literal "Variable does not exist" for missing.
+        // Missing variable
         if (strcmp(val, "Variable does not exist") == 0) {
             return badcommandMyMkdir();
         }
@@ -306,26 +303,25 @@ int my_mkdir(char *dirname) {
             return badcommandMyMkdir();
         }
 
-        name_to_make = val;
-
-        int rc = mkdir(name_to_make, 0777);
+        int rc = mkdir(val, 0777);
         free(val);
 
         if (rc != 0) return badcommandMyMkdir();
         return 0;
     }
 
-    // Non-$ case: enforce alphanumeric directory name (recommended for tests)
-    if (!is_alnum_string(name_to_make)) {
+    // Non-$ case: enforce alphanumeric directory name
+    if (!is_alnum_string(dirname)) {
         return badcommandMyMkdir();
     }
 
-    if (mkdir(name_to_make, 0777) != 0) {
+    if (mkdir(dirname, 0777) != 0) {
         return badcommandMyMkdir();
     }
 
     return 0;
 }
+
 
 
 int source(char *script) {
