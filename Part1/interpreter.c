@@ -8,6 +8,8 @@
 
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 int MAX_ARGS_SIZE = 3;
 
@@ -32,6 +34,11 @@ int badcommandMyTouch() {
     return 1;
 }
 
+int badcommandMyMkdir() {
+    printf("Bad command: my_mkdir\n");
+    return 1;
+}
+
 int is_alnum_string(char *s) {
     if (s == NULL || strlen(s) == 0) return 0;
     for (int i = 0; s[i]; i++) {
@@ -50,7 +57,15 @@ int source(char *script);
 int echo_cmd(char *token);
 int my_touch(char *filename);
 int my_cd(char *dirname);
+int my_ls();
+int my_mkdir(char *dirname);
 int run_cmd(char *command_args[], int args_size);
+
+static int cmp_strings(const void *a, const void *b) {
+    const char *sa = *(const char * const *)a;
+    const char *sb = *(const char * const *)b;
+    return strcmp(sa, sb);
+}
 
 // Takes parsed command arguments and routes to the right handler
 int interpreter(char *command_args[], int args_size) {
@@ -104,6 +119,14 @@ int interpreter(char *command_args[], int args_size) {
         if (args_size != 2) return badcommandMyCd();
         return my_cd(command_args[1]);
 
+    } else if (strcmp(command_args[0], "my_ls") == 0) {
+        if (args_size != 1) return badcommand();
+        return my_ls();
+
+    } else if (strcmp(command_args[0], "my_mkdir") == 0) {
+        if (args_size != 2) return badcommandMyMkdir();
+        return my_mkdir(command_args[1]);
+
     } else if (strcmp(command_args[0], "run") == 0) {
         if (args_size < 2) return badcommand();
         return run_cmd(command_args, args_size);
@@ -131,7 +154,6 @@ run COMMAND ARGS\tExecutes an external command\n ";
     return 0;
 }
 
-
 int quit() {
     printf("Bye!\n");
     exit(0);
@@ -148,9 +170,6 @@ int print(char *var) {
 }
 
 int echo_cmd(char *token) {
-    // If token starts with $, print the variable value or blank line if not found
-    // Otherwise just print the token
-    
     if (token == NULL) {
         printf("\n");
         return 0;
@@ -165,12 +184,11 @@ int echo_cmd(char *token) {
 
         char *val = mem_get_value(varname);
 
-        // mem_get_value returns this literal when not found
         if (strcmp(val, "Variable does not exist") == 0) {
             printf("\n");
         } else {
             printf("%s\n", val);
-            free(val); // mem_get_value strdup()s successful lookups
+            free(val);
         }
         return 0;
     }
@@ -187,7 +205,7 @@ int my_touch(char *filename) {
     if (!is_alnum_string(filename)) {
         return badcommandMyTouch();
     }
-    // Open in append mode to create file if it doesnt exist
+
     FILE *f = fopen(filename, "a");
     if (f == NULL) {
         return badcommandMyTouch();
@@ -211,6 +229,73 @@ int my_cd(char *dirname) {
     return 0;
 }
 
+int my_ls() {
+    DIR *dir = opendir(".");
+    if (dir == NULL) {
+        return badcommand();
+    }
+
+    size_t cap = 16;
+    size_t n = 0;
+    char **names = malloc(cap * sizeof(char *));
+    if (names == NULL) {
+        closedir(dir);
+        return badcommand();
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (n == cap) {
+            cap *= 2;
+            char **tmp = realloc(names, cap * sizeof(char *));
+            if (tmp == NULL) {
+                for (size_t i = 0; i < n; i++) free(names[i]);
+                free(names);
+                closedir(dir);
+                return badcommand();
+            }
+            names = tmp;
+        }
+
+        names[n] = strdup(entry->d_name);
+        if (names[n] == NULL) {
+            for (size_t i = 0; i < n; i++) free(names[i]);
+            free(names);
+            closedir(dir);
+            return badcommand();
+        }
+        n++;
+    }
+
+    closedir(dir);
+
+    qsort(names, n, sizeof(char *), cmp_strings);
+
+    for (size_t i = 0; i < n; i++) {
+        printf("%s\n", names[i]);
+        free(names[i]);
+    }
+    free(names);
+
+    return 0;
+}
+
+int my_mkdir(char *dirname) {
+    if (dirname == NULL || dirname[0] == '\0') {
+        return badcommandMyMkdir();
+    }
+
+    if (!is_alnum_string(dirname)) {
+        return badcommandMyMkdir();
+    }
+
+    if (mkdir(dirname, 0777) != 0) {
+        return badcommandMyMkdir();
+    }
+
+    return 0;
+}
+
 int source(char *script) {
     int errCode = 0;
     char line[MAX_USER_INPUT];
@@ -222,7 +307,7 @@ int source(char *script) {
 
     fgets(line, MAX_USER_INPUT - 1, p);
     while (1) {
-        errCode = parseInput(line); // which calls interpreter()
+        errCode = parseInput(line);
         memset(line, 0, sizeof(line));
 
         if (feof(p)) {
@@ -236,7 +321,6 @@ int source(char *script) {
 }
 
 int run_cmd(char *command_args[], int args_size) {
-    // Use fork-exec-wait to run external commands
     pid_t pid;
     int status;
     
@@ -249,23 +333,16 @@ int run_cmd(char *command_args[], int args_size) {
     if (pid < 0) {
         return badcommand();
     } else if (pid == 0) {
-        // Child process: execute the command
-        // Build argument array for execvp
-        // execvp needs: [command, arg1, arg2, ..., NULL]
-        char *exec_args[args_size]; // args_size includes "run", so we skip it
+        char *exec_args[args_size];
         
-        // Skip "run" (index 0), copy rest of arguments
         for (int i = 1; i < args_size; i++) {
             exec_args[i - 1] = command_args[i];
         }
-        exec_args[args_size - 1] = NULL; // execvp requires NULL terminator
+        exec_args[args_size - 1] = NULL;
         
         execvp(exec_args[0], exec_args);
-        
-        // If execvp returns, it failed
         exit(1);
     } else {
-        // Parent process: wait for child to complete
         wait(&status);
         return 0;
     }
