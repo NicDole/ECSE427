@@ -244,6 +244,14 @@ int my_cd(char *dirname) {
         return badcommandMyCd();
     }
 
+    if (!is_alnum_string(dirname)) {
+        return badcommandMyCd();
+    }
+
+    if (!is_alnum_string(dirname)) {
+        return badcommandMyCd();
+    }
+
     // chdir returns 0 on success, non-zero on failure (e.g., directory doesn't exist)
     if (chdir(dirname) != 0) {
         return badcommandMyCd();
@@ -318,12 +326,48 @@ int my_mkdir(char *dirname) {
     }
 
     // mkdir returns 0 on success, non-zero on failure (e.g., directory already exists)
-    if (mkdir(dirname, 0777) != 0) {
+    char *name_to_make = dirname;
+
+    // Handle $VAR case
+    if (dirname[0] == '$') {
+        char *var = dirname + 1;
+        if (var[0] == '\0') return badcommandMyMkdir();
+
+        char *val = mem_get_value(var);
+
+        // Your mem_get_value returns a newly-allocated string for existing vars
+        // but returns the literal "Variable does not exist" for missing.
+        if (strcmp(val, "Variable does not exist") == 0) {
+            return badcommandMyMkdir();
+        }
+
+        // Must be exactly one alphanumeric token
+        if (!is_alnum_string(val)) {
+            free(val);
+            return badcommandMyMkdir();
+        }
+
+        name_to_make = val;
+
+        int rc = mkdir(name_to_make, 0777);
+        free(val);
+
+        if (rc != 0) return badcommandMyMkdir();
+        return 0;
+    }
+
+    // Non-$ case: enforce alphanumeric directory name (recommended for tests)
+    if (!is_alnum_string(name_to_make)) {
+        return badcommandMyMkdir();
+    }
+
+    if (mkdir(name_to_make, 0777) != 0) {
         return badcommandMyMkdir();
     }
 
     return 0;
 }
+
 
 // Executes commands from a script file line by line
 int source(char *script) {
