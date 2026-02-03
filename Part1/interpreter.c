@@ -340,6 +340,7 @@ int my_mkdir(char *dirname) {
         if (strcmp(val, "Variable does not exist") == 0) {
             return badcommandMyMkdir();
         }
+        
 
         // Must be exactly one alphanumeric token
         if (!is_alnum_string(val)) {
