@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 // Max number of args for most commands (run can have more)
 int MAX_ARGS_SIZE = 3;
@@ -350,7 +351,11 @@ int my_mkdir(char *dirname) {
         int rc = mkdir(val, 0777);
         free(val);
 
-        if (rc != 0) return badcommandMyMkdir();
+        // mkdir returns 0 on success, or -1 on error
+        // EEXIST means directory already exists, which is fine (not a bad command)
+        if (rc != 0 && errno != EEXIST) {
+            return badcommandMyMkdir();
+        }
         return 0;
     }
 
@@ -359,7 +364,9 @@ int my_mkdir(char *dirname) {
         return badcommandMyMkdir();
     }
 
-    if (mkdir(dirname, 0777) != 0) {
+    // mkdir returns 0 on success, or -1 on error
+    // EEXIST means directory already exists, which is fine (not a bad command)
+    if (mkdir(dirname, 0777) != 0 && errno != EEXIST) {
         return badcommandMyMkdir();
     }
 
