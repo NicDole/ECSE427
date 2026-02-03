@@ -393,7 +393,7 @@ int source(char *script) {
     fclose(p);
     return errCode;  // Return last error code encountered (or 0 if all succeeded)
 }
-}
+
 
 // Executes an external command by forking and using execvp
 int run_cmd(char *command_args[], int args_size) {
