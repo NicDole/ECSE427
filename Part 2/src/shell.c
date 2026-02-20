@@ -6,6 +6,7 @@
 #include "shell.h"
 #include "interpreter.h"
 #include "shellmemory.h"
+#include "scheduler.h"
 
 int parseInput(char ui[]);
 
@@ -26,6 +27,8 @@ int main(int argc, char *argv[]) {
 
     //init shell memory
     mem_init();
+    //init ready queue
+    ready_queue_init();
     while (1) {
         if (!batch_mode) {
             printf("%c ", prompt);

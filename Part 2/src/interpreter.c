@@ -22,6 +22,7 @@
 
 #include "shellmemory.h"
 #include "shell.h"
+#include "scheduler.h"
 
 int badcommand() {
     printf("Unknown Command\n");
@@ -356,25 +357,54 @@ int cd(char *path) {
 
 int source(char *script) {
     int errCode = 0;
-    char line[MAX_USER_INPUT];
-    FILE *p = fopen(script, "rt");      // the program is in a file
-
-    if (p == NULL) {
+    
+    // Step 1: Load entire program into shell memory
+    int lines_loaded = mem_load_program(script);
+    if (lines_loaded < 0) {
         return badcommandFileDoesNotExist();
     }
 
-    fgets(line, MAX_USER_INPUT - 1, p);
-    while (1) {
-        errCode = parseInput(line);     // which calls interpreter()
-        memset(line, 0, sizeof(line));
-
-        if (feof(p)) {
-            break;
-        }
-        fgets(line, MAX_USER_INPUT - 1, p);
+    // Step 2: Create PCB for the script
+    // Program starts at index 0 in shell memory
+    struct PCB *pcb = pcb_create(0, lines_loaded);
+    if (pcb == NULL) {
+        mem_clear_program();
+        return 1;  // Memory allocation failed
     }
 
-    fclose(p);
+    // Step 3: Enqueue PCB at tail of ready queue
+    ready_queue_enqueue(pcb);
+
+    // Step 4: Execute process through scheduler (FCFS)
+    // Continue until ready queue is empty
+    while (!ready_queue_is_empty()) {
+        // Get PCB at head of queue
+        struct PCB *current = ready_queue_dequeue();
+        if (current == NULL) {
+            break;
+        }
+
+        // Execute all instructions for this process
+        while (!pcb_is_done(current)) {
+            // Get current instruction line
+            char *instruction = pcb_get_current_instruction(current);
+            if (instruction == NULL) {
+                break;
+            }
+
+            // Send instruction to interpreter
+            errCode = parseInput(instruction);
+
+            // Advance program counter to next instruction
+            pcb_advance(current);
+        }
+
+        // Step 5: Process is done - cleanup
+        pcb_free(current);
+    }
+
+    // Cleanup: Clear program code from shell memory
+    mem_clear_program();
 
     return errCode;
 }
