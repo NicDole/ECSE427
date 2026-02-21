@@ -1,0 +1,3 @@
+exec P_short P_short FCFS
+exec P_short FCFS
+quit

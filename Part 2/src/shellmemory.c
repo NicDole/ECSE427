@@ -134,3 +134,34 @@ void mem_clear_program(void) {
     }
     program_line_count = 0;
 }
+
+int mem_append_program(char *filename) {
+    FILE *p = fopen(filename, "rt");
+    if (p == NULL) {
+        return -1;
+    }
+
+    char line[101];
+    int lines_loaded = 0;
+
+    while (fgets(line, sizeof(line), p) != NULL && program_line_count < MEM_SIZE) {
+        int len = strlen(line);
+        if (len > 0 && line[len - 1] == '\n') {
+            line[len - 1] = '\0';
+        }
+        if (len > 0 && line[len - 1] == '\r') {
+            line[len - 1] = '\0';
+        }
+
+        program_lines[program_line_count] = strdup(line);
+        program_line_count++;
+        lines_loaded++;
+    }
+
+    fclose(p);
+    /* Out of space so hit MEM_SIZE and may have truncated the file */
+    if (program_line_count >= MEM_SIZE && lines_loaded > 0) {
+        return -1;
+    }
+    return lines_loaded;
+}

@@ -1,0 +1,3 @@
+exec P_short BADPOLICY
+exec P_short FCFS
+quit

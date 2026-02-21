@@ -2,6 +2,17 @@
 #define SCHEDULER_H
 
 /**
+ * Scheduling policy. Used by exec to select enqueue order and time slice.
+ * 0 = run to completion (FCFS, SJF); >0 = max instructions before preempt (RR, AGING).
+ */
+typedef enum {
+    POLICY_FCFS,
+    POLICY_SJF,
+    POLICY_RR,
+    POLICY_AGING
+} SchedulePolicy;
+
+/**
  * Process Control Block structure.
  *
  * Tracks execution state for a script/process. Each script loaded into
@@ -94,5 +105,11 @@ char *pcb_get_current_instruction(struct PCB *pcb);
  * @param pcb Pointer to PCB
  */
 void pcb_advance(struct PCB *pcb);
+
+/**
+ * Number of instructions to run before preempting (for preemptive policies).
+ * Returns 0 for non-preemptive (run to completion).
+ */
+int scheduler_quantum(SchedulePolicy policy);
 
 #endif // SCHEDULER_H

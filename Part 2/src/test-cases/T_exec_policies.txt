@@ -1,0 +1,5 @@
+exec P_short FCFS
+exec P_short SJF
+exec P_short RR
+exec P_short AGING
+quit

@@ -103,3 +103,16 @@ void pcb_advance(struct PCB *pcb) {
         pcb->pc++;
     }
 }
+
+int scheduler_quantum(SchedulePolicy policy) {
+    switch (policy) {
+    case POLICY_FCFS:
+    case POLICY_SJF:
+        return 0;   /* run to completion */
+    case POLICY_RR:
+        return 2;   /* time slice 2 (1.2.3) */
+    case POLICY_AGING:
+        return 1;   /* time slice 1 (1.2.4) */
+    }
+    return 0;
+}

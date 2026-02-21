@@ -55,8 +55,12 @@ int my_mkdir(char *name);
 int touch(char *path);
 int cd(char *path);
 int source(char *script);
+int exec_cmd(char *command_args[], int args_size);
 int run(char *args[], int args_size);
 int badcommandFileDoesNotExist();
+
+/* Run ready queue until empty; policy controls quantum (0 = run to completion). */
+static int run_ready_queue_until_empty(SchedulePolicy policy);
 
 // Interpret commands and their arguments
 int interpreter(char *command_args[], int args_size) {
@@ -134,6 +138,11 @@ int interpreter(char *command_args[], int args_size) {
             return badcommand();
         return source(command_args[1]);
 
+    } else if (strcmp(command_args[0], "exec") == 0) {
+        if (args_size < 3 || args_size > 5)
+            return badcommand();
+        return exec_cmd(command_args, args_size);
+
     } else if (strcmp(command_args[0], "run") == 0) {
         if (args_size < 2)
             return badcommand();
@@ -148,10 +157,11 @@ int help() {
     // note the literal tab characters here for alignment
     char help_string[] = "COMMAND			DESCRIPTION\n \
 help			Displays all the commands\n \
-quit			Exits / terminates the shell with “Bye!”\n \
+quit			Exits / terminates the shell with \"Bye!\"\n \
 set VAR STRING		Assigns a value to shell memory\n \
 print VAR		Displays the STRING assigned to VAR\n \
-source SCRIPT.TXT		Executes the file SCRIPT.TXT\n ";
+source SCRIPT.TXT		Executes the file SCRIPT.TXT\n \
+exec prog1 [prog2 prog3] POLICY	Executes up to 3 programs (FCFS, SJF, RR, AGING)\n ";
     printf("%s\n", help_string);
     return 0;
 }
@@ -355,57 +365,182 @@ int cd(char *path) {
     return 0;
 }
 
-int source(char *script) {
+static int run_ready_queue_until_empty(SchedulePolicy policy) {
     int errCode = 0;
-    
-    // Step 1: Load entire program into shell memory
-    int lines_loaded = mem_load_program(script);
-    if (lines_loaded < 0) {
-        return badcommandFileDoesNotExist();
-    }
+    int quantum = scheduler_quantum(policy);
 
-    // Step 2: Create PCB for the script
-    // Program starts at index 0 in shell memory
-    struct PCB *pcb = pcb_create(0, lines_loaded);
-    if (pcb == NULL) {
-        mem_clear_program();
-        return 1;  // Memory allocation failed
-    }
-
-    // Step 3: Enqueue PCB at tail of ready queue
-    ready_queue_enqueue(pcb);
-
-    // Step 4: Execute process through scheduler (FCFS)
-    // Continue until ready queue is empty
     while (!ready_queue_is_empty()) {
-        // Get PCB at head of queue
         struct PCB *current = ready_queue_dequeue();
         if (current == NULL) {
             break;
         }
 
-        // Execute all instructions for this process
-        while (!pcb_is_done(current)) {
-            // Get current instruction line
-            char *instruction = pcb_get_current_instruction(current);
-            if (instruction == NULL) {
-                break;
+        if (quantum == 0) {
+            /* Non-preemptive: run to completion */
+            while (!pcb_is_done(current)) {
+                char *instruction = pcb_get_current_instruction(current);
+                if (instruction == NULL) {
+                    break;
+                }
+                errCode = parseInput(instruction);
+                pcb_advance(current);
             }
-
-            // Send instruction to interpreter
-            errCode = parseInput(instruction);
-
-            // Advance program counter to next instruction
-            pcb_advance(current);
+            pcb_free(current);
+        } else {
+            /* Preemptive: run up to quantum instructions then re-enqueue */
+            int steps = 0;
+            while (!pcb_is_done(current) && steps < quantum) {
+                char *instruction = pcb_get_current_instruction(current);
+                if (instruction == NULL) {
+                    break;
+                }
+                errCode = parseInput(instruction);
+                pcb_advance(current);
+                steps++;
+            }
+            if (pcb_is_done(current)) {
+                pcb_free(current);
+            } else {
+                ready_queue_enqueue(current);
+            }
         }
+    }
+    return errCode;
+}
 
-        // Step 5: Process is done - cleanup
-        pcb_free(current);
+int source(char *script) {
+    int lines_loaded = mem_load_program(script);
+    if (lines_loaded < 0) {
+        return badcommandFileDoesNotExist();
     }
 
-    // Cleanup: Clear program code from shell memory
+    struct PCB *pcb = pcb_create(0, lines_loaded);
+    if (pcb == NULL) {
+        mem_clear_program();
+        return 1;
+    }
+
+    ready_queue_enqueue(pcb);
+    int errCode = run_ready_queue_until_empty(POLICY_FCFS);
+    mem_clear_program();
+    return errCode;
+}
+
+static int exec_error(const char *msg) {
+    printf("Bad command: %s\n", msg);
+    return 1;
+}
+
+static int parse_policy(char *policy_str, SchedulePolicy *out) {
+    if (strcmp(policy_str, "FCFS") == 0) {
+        *out = POLICY_FCFS;
+        return 1;
+    }
+    if (strcmp(policy_str, "SJF") == 0) {
+        *out = POLICY_SJF;
+        return 1;
+    }
+    if (strcmp(policy_str, "RR") == 0) {
+        *out = POLICY_RR;
+        return 1;
+    }
+    if (strcmp(policy_str, "AGING") == 0) {
+        *out = POLICY_AGING;
+        return 1;
+    }
+    return 0;
+}
+
+int exec_cmd(char *command_args[], int args_size) {
+    /* Last arg is POLICY; programs are args [1..args_size-2] */
+    int num_progs = args_size - 2;
+    char *policy_str = command_args[args_size - 1];
+    SchedulePolicy policy;
+
+    if (num_progs < 1 || num_progs > 3) {
+        return exec_error("exec usage");
+    }
+    if (!parse_policy(policy_str, &policy)) {
+        return exec_error("invalid policy");
+    }
+
+    /* Duplicate script names? */
+    for (int i = 1; i < args_size - 1; i++) {
+        for (int j = i + 1; j < args_size - 1; j++) {
+            if (strcmp(command_args[i], command_args[j]) == 0) {
+                return exec_error("duplicate script names");
+            }
+        }
+    }
+
+    /* Single program: same as source(prog1) */
+    if (num_progs == 1) {
+        return source(command_args[1]);
+    }
+
+    /* Load all programs; on any error, clear and abort */
     mem_clear_program();
 
+    int L0 = mem_load_program(command_args[1]);
+    if (L0 < 0) {
+        mem_clear_program();
+        return badcommandFileDoesNotExist();
+    }
+
+    int L1 = 0, L2 = 0;
+    if (num_progs >= 2) {
+        L1 = mem_append_program(command_args[2]);
+        if (L1 < 0) {
+            mem_clear_program();
+            return badcommandFileDoesNotExist();
+        }
+    }
+    if (num_progs >= 3) {
+        L2 = mem_append_program(command_args[3]);
+        if (L2 < 0) {
+            mem_clear_program();
+            return badcommandFileDoesNotExist();
+        }
+    }
+
+    /* Create PCBs with correct start_index and length */
+    int start = 0;
+    struct PCB *pcb0 = pcb_create(start, L0);
+    if (pcb0 == NULL) {
+        mem_clear_program();
+        return 1;
+    }
+    ready_queue_enqueue(pcb0);
+
+    if (num_progs >= 2) {
+        start += L0;
+        struct PCB *pcb1 = pcb_create(start, L1);
+        if (pcb1 == NULL) {
+            while (!ready_queue_is_empty()) {
+                struct PCB *p = ready_queue_dequeue();
+                pcb_free(p);
+            }
+            mem_clear_program();
+            return 1;
+        }
+        ready_queue_enqueue(pcb1);
+    }
+    if (num_progs >= 3) {
+        start += L1;
+        struct PCB *pcb2 = pcb_create(start, L2);
+        if (pcb2 == NULL) {
+            while (!ready_queue_is_empty()) {
+                struct PCB *p = ready_queue_dequeue();
+                pcb_free(p);
+            }
+            mem_clear_program();
+            return 1;
+        }
+        ready_queue_enqueue(pcb2);
+    }
+
+    int errCode = run_ready_queue_until_empty(policy);
+    mem_clear_program();
     return errCode;
 }
 

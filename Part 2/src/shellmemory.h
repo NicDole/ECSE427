@@ -57,3 +57,12 @@ int mem_get_program_line_count(void);
  * a program finishes execution to free memory.
  */
 void mem_clear_program(void);
+
+/**
+ * Append program lines from file to current program memory (no clear).
+ * Used by exec to load multiple scripts contiguously.
+ *
+ * @param filename Path to the script file to load
+ * @return Number of lines appended on success, -1 on error (file not found or out of space)
+ */
+int mem_append_program(char *filename);
