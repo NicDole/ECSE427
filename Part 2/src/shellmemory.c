@@ -10,14 +10,15 @@ struct memory_struct {
 
 struct memory_struct shellmemory[MEM_SIZE];
 
-/** Program line storage - array of strings holding loaded program lines */
+// Program line storage - array of strings holding loaded program lines
 char *program_lines[MEM_SIZE];
 
-/** Counter tracking number of program lines currently loaded */
+// Counter tracking number of program lines currently loaded
 int program_line_count = 0;
 
 /**
- * @brief Helper function to match variable names
+ * Helper function to match variable names.
+ *
  * @param model First string to compare
  * @param var Second string to compare
  * @return 1 if strings match, 0 otherwise
@@ -159,7 +160,7 @@ int mem_append_program(char *filename) {
     }
 
     fclose(p);
-    /* Out of space so hit MEM_SIZE and may have truncated the file */
+    // Out of space: hit MEM_SIZE and may have truncated the file
     if (program_line_count >= MEM_SIZE && lines_loaded > 0) {
         return -1;
     }

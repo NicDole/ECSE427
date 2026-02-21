@@ -9,7 +9,6 @@ void mem_init();
  * Get value associated with a variable name.
  *
  * @param var Variable name to lookup
- *
  * @return Duplicated string value, or NULL if not found
  */
 char *mem_get_value(char *var);
@@ -29,7 +28,6 @@ void mem_set_value(char *var, char *value);
  * Automatically clears any existing program before loading.
  *
  * @param filename Path to the script file to load
- *
  * @return Number of lines loaded on success, -1 on error
  */
 int mem_load_program(char *filename);
@@ -38,7 +36,6 @@ int mem_load_program(char *filename);
  * Get a program line by index.
  *
  * @param index Zero-based index of the line to retrieve
- *
  * @return Pointer to the line string, or NULL if index is invalid
  */
 char *mem_get_program_line(int index);

@@ -59,7 +59,7 @@ int exec_cmd(char *command_args[], int args_size);
 int run(char *args[], int args_size);
 int badcommandFileDoesNotExist();
 
-/* Run ready queue until empty; policy controls quantum (0 = run to completion). */
+// Run ready queue until empty; policy controls quantum (0 = run to completion).
 static int run_ready_queue_until_empty(SchedulePolicy policy);
 
 // Interpret commands and their arguments
@@ -376,7 +376,7 @@ static int run_ready_queue_until_empty(SchedulePolicy policy) {
         }
 
         if (quantum == 0) {
-            /* Non-preemptive: run to completion */
+            // Non-preemptive: run to completion
             while (!pcb_is_done(current)) {
                 char *instruction = pcb_get_current_instruction(current);
                 if (instruction == NULL) {
@@ -387,7 +387,7 @@ static int run_ready_queue_until_empty(SchedulePolicy policy) {
             }
             pcb_free(current);
         } else {
-            /* Preemptive: run up to quantum instructions then re-enqueue */
+            // Preemptive: run up to quantum instructions then re-enqueue
             int steps = 0;
             while (!pcb_is_done(current) && steps < quantum) {
                 char *instruction = pcb_get_current_instruction(current);
@@ -452,7 +452,7 @@ static int parse_policy(char *policy_str, SchedulePolicy *out) {
 }
 
 int exec_cmd(char *command_args[], int args_size) {
-    /* Last arg is POLICY; programs are args [1..args_size-2] */
+    // Last arg is POLICY; programs are args [1..args_size-2]
     int num_progs = args_size - 2;
     char *policy_str = command_args[args_size - 1];
     SchedulePolicy policy;
@@ -464,7 +464,7 @@ int exec_cmd(char *command_args[], int args_size) {
         return exec_error("invalid policy");
     }
 
-    /* Duplicate script names? */
+    // Duplicate script names?
     for (int i = 1; i < args_size - 1; i++) {
         for (int j = i + 1; j < args_size - 1; j++) {
             if (strcmp(command_args[i], command_args[j]) == 0) {
@@ -473,12 +473,12 @@ int exec_cmd(char *command_args[], int args_size) {
         }
     }
 
-    /* Single program: same as source(prog1) */
+    // Single program: same as source(prog1)
     if (num_progs == 1) {
         return source(command_args[1]);
     }
 
-    /* Load all programs; on any error, clear and abort */
+    // Load all programs; on any error, clear and abort
     mem_clear_program();
 
     int L0 = mem_load_program(command_args[1]);
@@ -503,40 +503,56 @@ int exec_cmd(char *command_args[], int args_size) {
         }
     }
 
-    /* Create PCBs with correct start_index and length */
+    // Create PCBs with correct start_index and length
+    struct PCB *pcbs[3];
+    int np = 0;
     int start = 0;
-    struct PCB *pcb0 = pcb_create(start, L0);
-    if (pcb0 == NULL) {
+
+    struct PCB *p0 = pcb_create(start, L0);
+    if (p0 == NULL) {
         mem_clear_program();
         return 1;
     }
-    ready_queue_enqueue(pcb0);
-
+    pcbs[np++] = p0;
     if (num_progs >= 2) {
         start += L0;
-        struct PCB *pcb1 = pcb_create(start, L1);
-        if (pcb1 == NULL) {
-            while (!ready_queue_is_empty()) {
-                struct PCB *p = ready_queue_dequeue();
-                pcb_free(p);
-            }
+        struct PCB *p1 = pcb_create(start, L1);
+        if (p1 == NULL) {
+            for (int k = 0; k < np; k++) pcb_free(pcbs[k]);
             mem_clear_program();
             return 1;
         }
-        ready_queue_enqueue(pcb1);
+        pcbs[np++] = p1;
     }
     if (num_progs >= 3) {
         start += L1;
-        struct PCB *pcb2 = pcb_create(start, L2);
-        if (pcb2 == NULL) {
-            while (!ready_queue_is_empty()) {
-                struct PCB *p = ready_queue_dequeue();
-                pcb_free(p);
-            }
+        struct PCB *p2 = pcb_create(start, L2);
+        if (p2 == NULL) {
+            for (int k = 0; k < np; k++) pcb_free(pcbs[k]);
             mem_clear_program();
             return 1;
         }
-        ready_queue_enqueue(pcb2);
+        pcbs[np++] = p2;
+    }
+
+    // Enqueue order: FCFS and RR use argument order (prog1, prog2, prog3).
+    // SJF uses job length (shortest first); only SJF needs to reorder.
+    if (policy == POLICY_SJF && np > 1) {
+        // Sort by length ascending, then by start_index for stable order
+        for (int i = 0; i < np - 1; i++) {
+            for (int j = i + 1; j < np; j++) {
+                if (pcbs[j]->length < pcbs[i]->length ||
+                    (pcbs[j]->length == pcbs[i]->length && pcbs[j]->start_index < pcbs[i]->start_index)) {
+                    struct PCB *tmp = pcbs[i];
+                    pcbs[i] = pcbs[j];
+                    pcbs[j] = tmp;
+                }
+            }
+        }
+    }
+
+    for (int k = 0; k < np; k++) {
+        ready_queue_enqueue(pcbs[k]);
     }
 
     int errCode = run_ready_queue_until_empty(policy);

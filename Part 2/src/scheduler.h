@@ -69,7 +69,6 @@ int ready_queue_is_empty(void);
  *
  * @param start_index Starting index in shell memory
  * @param length      Number of lines in the program
- *
  * @return Pointer to newly allocated PCB, or NULL on failure
  */
 struct PCB *pcb_create(int start_index, int length);
@@ -85,7 +84,6 @@ void pcb_free(struct PCB *pcb);
  * Check if PCB has completed execution.
  *
  * @param pcb Pointer to PCB to check
- *
  * @return 1 if process is done (pc >= length), 0 otherwise
  */
 int pcb_is_done(struct PCB *pcb);
@@ -94,7 +92,6 @@ int pcb_is_done(struct PCB *pcb);
  * Get the current instruction line for a PCB.
  *
  * @param pcb Pointer to PCB
- *
  * @return Pointer to current instruction string, or NULL if invalid
  */
 char *pcb_get_current_instruction(struct PCB *pcb);

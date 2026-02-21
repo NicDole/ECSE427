@@ -1,10 +1,10 @@
 #!/bin/bash
-# Run 1.2.2 exec tests from test-cases directory (so P_short, P_prog1, etc. are in cwd).
+# Run 1.2.2 and 1.2.3 exec tests from test-cases directory (so P_short, P_prog1, etc. are in cwd).
 # Usage: cd test-cases && ./run_exec_tests.sh
 
 set -e
 MYSH="../mysh"
-TESTS="T_exec_single T_exec_two T_exec_invalid_policy T_exec_usage_few T_exec_usage_many T_exec_duplicate T_exec_notfound T_exec_policies T_FCFS"
+TESTS="T_exec_single T_exec_two T_exec_invalid_policy T_exec_usage_few T_exec_usage_many T_exec_duplicate T_exec_notfound T_exec_policies T_FCFS T_SJF T_RR"
 
 for t in $TESTS; do
   if [ ! -f "${t}.txt" ]; then
