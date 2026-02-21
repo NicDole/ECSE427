@@ -1,0 +1,3 @@
+#Avoids pushing compiled files to the repository
+*.o
+mysh
