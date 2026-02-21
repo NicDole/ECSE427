@@ -68,6 +68,7 @@ struct PCB *pcb_create(int start_index, int length) {
     pcb->length = length;
     // Start at first instruction
     pcb->pc = 0;
+    pcb->job_length_score = length;
     pcb->next = NULL;
 
     return pcb;
@@ -115,4 +116,63 @@ int scheduler_quantum(SchedulePolicy policy) {
         return 1;   // time slice 1 (1.2.4)
     }
     return 0;
+}
+
+void ready_queue_age(void) {
+    struct PCB *p = ready_queue.head;
+    while (p != NULL) {
+        if (p->job_length_score > 0) {
+            p->job_length_score--;
+        }
+        p = p->next;
+    }
+}
+
+void ready_queue_enqueue_aging(struct PCB *pcb, int reinsert) {
+    if (pcb == NULL) {
+        return;
+    }
+    pcb->next = NULL;
+
+    if (ready_queue.head == NULL) {
+        ready_queue.head = pcb;
+        ready_queue.tail = pcb;
+        return;
+    }
+
+    // Re-insert if no job in queue has a lower score, job that just ran runs again.
+    if (reinsert && ready_queue.head->job_length_score >= pcb->job_length_score) {
+        pcb->next = ready_queue.head;
+        ready_queue.head = pcb;
+        return;
+    }
+
+    // Initially we will insert before first with score > pcb's.
+    // When we reinsert we will insert before first with score >= pcb's (someone had lower score).
+    if (!reinsert && ready_queue.head->job_length_score > pcb->job_length_score) {
+        pcb->next = ready_queue.head;
+        ready_queue.head = pcb;
+        return;
+    }
+
+    struct PCB *prev = ready_queue.head;
+    struct PCB *cur = ready_queue.head->next;
+    while (cur != NULL) {
+        if (reinsert) {
+            if (cur->job_length_score >= pcb->job_length_score) {
+                break;
+            }
+        } else {
+            if (cur->job_length_score > pcb->job_length_score) {
+                break;
+            }
+        }
+        prev = cur;
+        cur = cur->next;
+    }
+    prev->next = pcb;
+    pcb->next = cur;
+    if (cur == NULL) {
+        ready_queue.tail = pcb;
+    }
 }

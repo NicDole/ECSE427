@@ -401,7 +401,12 @@ static int run_ready_queue_until_empty(SchedulePolicy policy) {
             if (pcb_is_done(current)) {
                 pcb_free(current);
             } else {
-                ready_queue_enqueue(current);
+                if (policy == POLICY_AGING) {
+                    ready_queue_age();
+                    ready_queue_enqueue_aging(current, 1);
+                } else {
+                    ready_queue_enqueue(current);
+                }
             }
         }
     }
@@ -535,14 +540,13 @@ int exec_cmd(char *command_args[], int args_size) {
         pcbs[np++] = p2;
     }
 
-    // Enqueue order: FCFS and RR use argument order (prog1, prog2, prog3).
-    // SJF uses job length (shortest first); only SJF needs to reorder.
-    if (policy == POLICY_SJF && np > 1) {
-        // Sort by length ascending, then by start_index for stable order
+    // Enqueue order: FCFS and RR use argument order; SJF and AGING sort by job length / score.
+    if ((policy == POLICY_SJF || policy == POLICY_AGING) && np > 1) {
+        // Sort by job_length_score ascending, then by start_index for stable order
         for (int i = 0; i < np - 1; i++) {
             for (int j = i + 1; j < np; j++) {
-                if (pcbs[j]->length < pcbs[i]->length ||
-                    (pcbs[j]->length == pcbs[i]->length && pcbs[j]->start_index < pcbs[i]->start_index)) {
+                if (pcbs[j]->job_length_score < pcbs[i]->job_length_score ||
+                    (pcbs[j]->job_length_score == pcbs[i]->job_length_score && pcbs[j]->start_index < pcbs[i]->start_index)) {
                     struct PCB *tmp = pcbs[i];
                     pcbs[i] = pcbs[j];
                     pcbs[j] = tmp;
@@ -552,7 +556,11 @@ int exec_cmd(char *command_args[], int args_size) {
     }
 
     for (int k = 0; k < np; k++) {
-        ready_queue_enqueue(pcbs[k]);
+        if (policy == POLICY_AGING) {
+            ready_queue_enqueue_aging(pcbs[k], 0);
+        } else {
+            ready_queue_enqueue(pcbs[k]);
+        }
     }
 
     int errCode = run_ready_queue_until_empty(policy);

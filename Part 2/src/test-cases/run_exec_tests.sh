@@ -4,7 +4,7 @@
 
 set -e
 MYSH="../mysh"
-TESTS="T_exec_single T_exec_two T_exec_invalid_policy T_exec_usage_few T_exec_usage_many T_exec_duplicate T_exec_notfound T_exec_policies T_FCFS T_SJF T_RR"
+TESTS="T_exec_single T_exec_two T_exec_invalid_policy T_exec_usage_few T_exec_usage_many T_exec_duplicate T_exec_notfound T_exec_policies T_FCFS T_SJF T_RR T_AGING"
 
 for t in $TESTS; do
   if [ ! -f "${t}.txt" ]; then

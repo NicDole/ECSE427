@@ -23,6 +23,7 @@ struct PCB {
     int start_index;            // Starting index in shell memory where program lines begin
     int length;                 // Total number of lines in the program
     int pc;                     // Program counter: current instruction index (0-based)
+    int job_length_score;       // For AGING: sort key, aged each time slice (min 0)
     struct PCB *next;           // Pointer to next PCB in ready queue (for linked list)
 };
 
@@ -108,5 +109,21 @@ void pcb_advance(struct PCB *pcb);
  * Returns 0 for non-preemptive (run to completion).
  */
 int scheduler_quantum(SchedulePolicy policy);
+
+/**
+ * Age all jobs in the ready queue: decrease job_length_score by 1, floor at 0.
+ * Used by AGING policy after each time slice (do not age the job that just ran).
+ */
+void ready_queue_age(void);
+
+/**
+ * Enqueue PCB in order of job_length_score.
+ * When reinsert is 1 (job that just ran): insert at front if no lower score in queue, else before first with score >= pcb's.
+ * When reinsert is 0 (initial load): insert before first with score > pcb's so equal scores preserve order.
+ *
+ * @param pcb     Pointer to PCB to enqueue
+ * @param reinsert 1 when re-inserting after a time slice, 0 when building initial queue
+ */
+void ready_queue_enqueue_aging(struct PCB *pcb, int reinsert);
 
 #endif // SCHEDULER_H
