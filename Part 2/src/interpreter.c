@@ -58,6 +58,7 @@ int source(char *script);
 int exec_cmd(char *command_args[], int args_size);
 int run(char *args[], int args_size);
 int badcommandFileDoesNotExist();
+static int scheduler_running = 0;
 
 // Run ready queue until empty; policy controls quantum (0 = run to completion).
 static int run_ready_queue_until_empty(SchedulePolicy policy);
@@ -139,7 +140,7 @@ int interpreter(char *command_args[], int args_size) {
         return source(command_args[1]);
 
     } else if (strcmp(command_args[0], "exec") == 0) {
-        if (args_size < 3 || args_size > 5)
+        if (args_size < 3 || args_size > 6)
             return badcommand();
         return exec_cmd(command_args, args_size);
 
@@ -161,7 +162,7 @@ quit			Exits / terminates the shell with \"Bye!\"\n \
 set VAR STRING		Assigns a value to shell memory\n \
 print VAR		Displays the STRING assigned to VAR\n \
 source SCRIPT.TXT		Executes the file SCRIPT.TXT\n \
-exec prog1 [prog2 prog3] POLICY	Executes up to 3 programs (FCFS, SJF, RR, AGING)\n ";
+exec prog1 [prog2 prog3] POLICY	Executes up to 3 programs (FCFS, SJF, RR, RR30, AGING)\n ";
     printf("%s\n", help_string);
     return 0;
 }
@@ -366,6 +367,7 @@ int cd(char *path) {
 }
 
 static int run_ready_queue_until_empty(SchedulePolicy policy) {
+    scheduler_running = 1;
     int errCode = 0;
     int quantum = scheduler_quantum(policy);
 
@@ -410,6 +412,7 @@ static int run_ready_queue_until_empty(SchedulePolicy policy) {
             }
         }
     }
+    scheduler_running = 0;
     return errCode;
 }
 
@@ -421,7 +424,9 @@ int source(char *script) {
 
     struct PCB *pcb = pcb_create(0, lines_loaded);
     if (pcb == NULL) {
-        mem_clear_program();
+        if (!scheduler_running) {
+            mem_clear_program();
+        }
         return 1;
     }
 
@@ -449,6 +454,10 @@ static int parse_policy(char *policy_str, SchedulePolicy *out) {
         *out = POLICY_RR;
         return 1;
     }
+    if (strcmp(policy_str, "RR30") == 0) { 
+        *out = POLICY_RR30; 
+        return 1; 
+    }
     if (strcmp(policy_str, "AGING") == 0) {
         *out = POLICY_AGING;
         return 1;
@@ -457,6 +466,14 @@ static int parse_policy(char *policy_str, SchedulePolicy *out) {
 }
 
 int exec_cmd(char *command_args[], int args_size) {
+    int background = 0;
+
+    // optional trailing "#"
+    if (strcmp(command_args[args_size - 1], "#") == 0) {
+        background = 1;
+        args_size--; // ignore the "#"
+    }
+
     // Last arg is POLICY; programs are args [1..args_size-2]
     int num_progs = args_size - 2;
     char *policy_str = command_args[args_size - 1];
@@ -479,16 +496,22 @@ int exec_cmd(char *command_args[], int args_size) {
     }
 
     // Single program: same as source(prog1)
-    if (num_progs == 1) {
+    if (num_progs == 1 && !background) {
         return source(command_args[1]);
     }
 
-    // Load all programs; on any error, clear and abort
-    mem_clear_program();
+    // Clear program memory only when starting a fresh schedule.
+    // If scheduler is already running (exec inside batch script), we must append.
+    if (!scheduler_running) {
+        mem_clear_program();
+    }
+    int base_start = mem_get_program_line_count();
 
     int L0 = mem_load_program(command_args[1]);
     if (L0 < 0) {
-        mem_clear_program();
+        if (!scheduler_running) {
+            mem_clear_program();
+        }
         return badcommandFileDoesNotExist();
     }
 
@@ -496,14 +519,18 @@ int exec_cmd(char *command_args[], int args_size) {
     if (num_progs >= 2) {
         L1 = mem_append_program(command_args[2]);
         if (L1 < 0) {
-            mem_clear_program();
+            if (!scheduler_running) {
+                mem_clear_program();
+            }
             return badcommandFileDoesNotExist();
         }
     }
     if (num_progs >= 3) {
         L2 = mem_append_program(command_args[3]);
         if (L2 < 0) {
-            mem_clear_program();
+            if (!scheduler_running) {
+                mem_clear_program();
+            }
             return badcommandFileDoesNotExist();
         }
     }
@@ -511,11 +538,13 @@ int exec_cmd(char *command_args[], int args_size) {
     // Create PCBs with correct start_index and length
     struct PCB *pcbs[3];
     int np = 0;
-    int start = 0;
+    int start = base_start;
 
     struct PCB *p0 = pcb_create(start, L0);
     if (p0 == NULL) {
-        mem_clear_program();
+        if (!scheduler_running) {
+            mem_clear_program();
+        }
         return 1;
     }
     pcbs[np++] = p0;
@@ -524,7 +553,9 @@ int exec_cmd(char *command_args[], int args_size) {
         struct PCB *p1 = pcb_create(start, L1);
         if (p1 == NULL) {
             for (int k = 0; k < np; k++) pcb_free(pcbs[k]);
-            mem_clear_program();
+            if (!scheduler_running) {
+                mem_clear_program();
+            }
             return 1;
         }
         pcbs[np++] = p1;
@@ -534,7 +565,9 @@ int exec_cmd(char *command_args[], int args_size) {
         struct PCB *p2 = pcb_create(start, L2);
         if (p2 == NULL) {
             for (int k = 0; k < np; k++) pcb_free(pcbs[k]);
-            mem_clear_program();
+            if (!scheduler_running) {
+                mem_clear_program();
+            }
             return 1;
         }
         pcbs[np++] = p2;
@@ -563,8 +596,44 @@ int exec_cmd(char *command_args[], int args_size) {
         }
     }
 
+    if (background) {
+        int batch_start = mem_get_program_line_count();
+        int batch_len = mem_load_program_from_stdin(0); // append remaining stdin
+        if (batch_len < 0) {
+            // cleanup: free queued PCBs
+            while (!ready_queue_is_empty()) {
+                pcb_free(ready_queue_dequeue());
+            }
+            if (!scheduler_running) {
+                mem_clear_program();
+            }
+            return exec_error("background load failed");
+        }
+
+        struct PCB *batch = pcb_create(batch_start, batch_len);
+        if (batch == NULL) {
+            while (!ready_queue_is_empty()) {
+                pcb_free(ready_queue_dequeue());
+            }
+            if (!scheduler_running) {
+                mem_clear_program();
+            }
+            return 1;
+        }
+
+        // run first once
+        ready_queue_enqueue_front(batch);
+    }
+
+    if (scheduler_running) {
+        // Scheduler already active: just enqueue and return.
+        return 0;
+    }
+
     int errCode = run_ready_queue_until_empty(policy);
-    mem_clear_program();
+    if (!scheduler_running) {
+        mem_clear_program();
+    }
     return errCode;
 }
 

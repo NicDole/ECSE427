@@ -9,6 +9,7 @@ typedef enum {
     POLICY_FCFS,
     POLICY_SJF,
     POLICY_RR,
+    POLICY_RR30,
     POLICY_AGING
 } SchedulePolicy;
 
@@ -126,4 +127,15 @@ void ready_queue_age(void);
  */
 void ready_queue_enqueue_aging(struct PCB *pcb, int reinsert);
 
+/**
+ * Enqueue a PCB at the head of the ready queue.
+ *
+ * Used when a process must run before others already in the queue
+ * (example: background batch script process for exec ... #).
+ *
+ * @param pcb Pointer to PCB to enqueue at front
+ */
+void ready_queue_enqueue_front(struct PCB *pcb);
+
 #endif // SCHEDULER_H
+

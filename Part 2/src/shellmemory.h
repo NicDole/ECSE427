@@ -63,3 +63,15 @@ void mem_clear_program(void);
  * @return Number of lines appended on success, -1 on error (file not found or out of space)
  */
 int mem_append_program(char *filename);
+
+
+/**
+ * Load remaining program lines from stdin into shell memory.
+ *
+ * Reads from standard input until EOF and stores each line as a program line.
+ * If clear_first is non-zero, clears any existing program lines before loading.
+ *
+ * @param clear_first Non-zero to clear program memory before loading, 0 to append
+ * @return Number of lines loaded on success, -1 on error (out of space)
+ */
+int mem_load_program_from_stdin(int clear_first);

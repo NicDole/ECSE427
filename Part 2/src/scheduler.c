@@ -112,6 +112,8 @@ int scheduler_quantum(SchedulePolicy policy) {
         return 0;   // run to completion
     case POLICY_RR:
         return 2;   // time slice 2 (1.2.3)
+    case POLICY_RR30:
+        return 30;  // time slice 30
     case POLICY_AGING:
         return 1;   // time slice 1 (1.2.4)
     }
@@ -173,6 +175,18 @@ void ready_queue_enqueue_aging(struct PCB *pcb, int reinsert) {
     prev->next = pcb;
     pcb->next = cur;
     if (cur == NULL) {
+        ready_queue.tail = pcb;
+    }
+}
+
+
+void ready_queue_enqueue_front(struct PCB *pcb) {
+    if (pcb == NULL) return;
+
+    pcb->next = ready_queue.head;
+    ready_queue.head = pcb;
+
+    if (ready_queue.tail == NULL) {
         ready_queue.tail = pcb;
     }
 }

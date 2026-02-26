@@ -166,3 +166,39 @@ int mem_append_program(char *filename) {
     }
     return lines_loaded;
 }
+
+
+// Loads the remaining lines from stdin into program_lines (append or clear-first).
+// Returns number of lines loaded, or -1 on overflow / error.
+int mem_load_program_from_stdin(int clear_first) {
+    char line[101];
+    int lines_loaded = 0;
+
+    if (clear_first) {
+        mem_clear_program();
+    }
+
+    while (fgets(line, sizeof(line), stdin) != NULL) {
+        // Stop if out of space
+        if (program_line_count >= MEM_SIZE) {
+            return -1;
+        }
+
+        // Trim newline / carriage return
+        int len = (int)strlen(line);
+        if (len > 0 && line[len - 1] == '\n') {
+            line[len - 1] = '\0';
+            len--;
+        }
+        if (len > 0 && line[len - 1] == '\r') {
+            line[len - 1] = '\0';
+            len--;
+        }
+
+        program_lines[program_line_count] = strdup(line);
+        program_line_count++;
+        lines_loaded++;
+    }
+
+    return lines_loaded;
+}
