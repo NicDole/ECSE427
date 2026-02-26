@@ -1,5 +1,6 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
+#include <pthread.h>
 
 /**
  * Scheduling policy. Used by exec to select enqueue order and time slice.
@@ -136,6 +137,56 @@ void ready_queue_enqueue_aging(struct PCB *pcb, int reinsert);
  * @param pcb Pointer to PCB to enqueue at front
  */
 void ready_queue_enqueue_front(struct PCB *pcb);
+
+
+/**
+ * Initialize thread-safe ready queue support for MT mode.
+ *
+ * Must be called once before using the *_mt functions.
+ */
+void ready_queue_mt_init(void);
+
+/**
+ * Enqueue a PCB in MT mode (thread-safe). Signals workers that work is available.
+ *
+ * @param pcb Pointer to PCB to enqueue
+ */
+void ready_queue_mt_enqueue(struct PCB *pcb);
+
+/**
+ * Enqueue a PCB at the head in MT mode (thread-safe).
+ *
+ * @param pcb Pointer to PCB to enqueue at front
+ */
+void ready_queue_mt_enqueue_front(struct PCB *pcb);
+
+/**
+ * Dequeue a PCB in MT mode (thread-safe, blocking).
+ *
+ * Blocks until a PCB is available or shutdown is requested.
+ *
+ * @return Pointer to PCB, or NULL if shutdown and queue is empty
+ */
+struct PCB *ready_queue_mt_dequeue_blocking(void);
+
+/**
+ * Notify the queue that a worker finished a time slice.
+ *
+ * Used to track when all work is done so the main thread can return.
+ */
+void ready_queue_mt_worker_done(void);
+
+/**
+ * Block until the queue is empty AND no worker is currently running a PCB.
+ *
+ * Used by exec in MT mode to wait for completion.
+ */
+void ready_queue_mt_wait_all_done(void);
+
+/**
+ * Signal MT workers to shut down (used by quit). Wakes any blocked workers.
+ */
+void ready_queue_mt_shutdown(void);
 
 #endif // SCHEDULER_H
 

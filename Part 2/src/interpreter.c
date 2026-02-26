@@ -16,6 +16,8 @@
 #include <dirent.h>             // scandir
 #include <unistd.h>             // chdir
 #include <sys/stat.h>           // mkdir
+#include <pthread.h>
+
 // for run:
 #include <sys/types.h>          // pid_t
 #include <sys/wait.h>           // waitpid
@@ -59,6 +61,14 @@ int exec_cmd(char *command_args[], int args_size);
 int run(char *args[], int args_size);
 int badcommandFileDoesNotExist();
 static int scheduler_running = 0;
+static int mt_enabled = 0;
+static pthread_t mt_workers[2];
+static SchedulePolicy mt_policy = POLICY_RR;
+
+static void *mt_worker_main(void *arg);
+static void mt_start_workers_if_needed(SchedulePolicy policy);
+static void mt_stop_workers_if_running(void);
+static pthread_mutex_t parse_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Run ready queue until empty; policy controls quantum (0 = run to completion).
 static int run_ready_queue_until_empty(SchedulePolicy policy);
@@ -140,7 +150,7 @@ int interpreter(char *command_args[], int args_size) {
         return source(command_args[1]);
 
     } else if (strcmp(command_args[0], "exec") == 0) {
-        if (args_size < 3 || args_size > 6)
+    if (args_size < 3 || args_size > 7)
             return badcommand();
         return exec_cmd(command_args, args_size);
 
@@ -168,6 +178,9 @@ exec prog1 [prog2 prog3] POLICY	Executes up to 3 programs (FCFS, SJF, RR, RR30, 
 }
 
 int quit() {
+    if (mt_enabled) {
+        mt_stop_workers_if_running();
+    }
     printf("Bye!\n");
     exit(0);
 }
@@ -416,6 +429,75 @@ static int run_ready_queue_until_empty(SchedulePolicy policy) {
     return errCode;
 }
 
+static void mt_start_workers_if_needed(SchedulePolicy policy) {
+    if (mt_enabled) {
+        // policy may change between RR and RR30; update it
+        mt_policy = policy;
+        return;
+    }
+
+    mt_enabled = 1;
+    mt_policy = policy;
+
+    ready_queue_mt_init();
+
+    pthread_create(&mt_workers[0], NULL, mt_worker_main, NULL);
+    pthread_create(&mt_workers[1], NULL, mt_worker_main, NULL);
+}
+
+static void mt_stop_workers_if_running(void) {
+    if (!mt_enabled) return;
+
+    ready_queue_mt_shutdown();
+
+    pthread_join(mt_workers[0], NULL);
+    pthread_join(mt_workers[1], NULL);
+
+    mt_enabled = 0;
+}
+
+static void *mt_worker_main(void *arg) {
+    (void)arg;
+
+    while (1) {
+        struct PCB *pcb = ready_queue_mt_dequeue_blocking();
+        if (pcb == NULL) {
+            // shutdown requested and no work left
+            break;
+        }
+
+        int quantum = scheduler_quantum(mt_policy);
+        if (quantum <= 0) quantum = 1; // MT only used for RR/RR30, but be safe
+
+        int steps = 0;
+        while (!pcb_is_done(pcb) && steps < quantum) {
+            char *instruction = pcb_get_current_instruction(pcb);
+            if (instruction == NULL) break;
+
+            // Important: parseInput touches global shell state and is NOT thread-safe.
+            // The assignment expects concurrent scheduling, but typical solutions still
+            // serialize parseInput. We'll lock around parseInput next step.
+            // For now, we'll call parseInput directly and add a lock below.
+            pthread_mutex_lock(&parse_mutex);
+            parseInput(instruction);
+            pthread_mutex_unlock(&parse_mutex);
+
+            pcb_advance(pcb);
+            steps++;
+        }
+
+        if (pcb_is_done(pcb)) {
+            pcb_free(pcb);
+        } else {
+            ready_queue_mt_enqueue(pcb);
+        }
+
+        ready_queue_mt_worker_done();
+    }
+
+    return NULL;
+}
+
 int source(char *script) {
     int lines_loaded = mem_load_program(script);
     if (lines_loaded < 0) {
@@ -424,9 +506,7 @@ int source(char *script) {
 
     struct PCB *pcb = pcb_create(0, lines_loaded);
     if (pcb == NULL) {
-        if (!scheduler_running) {
-            mem_clear_program();
-        }
+        mem_clear_program();
         return 1;
     }
 
@@ -467,11 +547,21 @@ static int parse_policy(char *policy_str, SchedulePolicy *out) {
 
 int exec_cmd(char *command_args[], int args_size) {
     int background = 0;
+    int mt = 0;
 
-    // optional trailing "#"
-    if (strcmp(command_args[args_size - 1], "#") == 0) {
-        background = 1;
-        args_size--; // ignore the "#"
+    // consume optional trailing flags in any order
+    while (args_size > 0) {
+        if (strcmp(command_args[args_size - 1], "MT") == 0) {
+            mt = 1;
+            args_size--;
+            continue;
+        }
+        if (strcmp(command_args[args_size - 1], "#") == 0) {
+            background = 1;
+            args_size--;
+            continue;
+        }
+        break;
     }
 
     // Last arg is POLICY; programs are args [1..args_size-2]
@@ -484,6 +574,10 @@ int exec_cmd(char *command_args[], int args_size) {
     }
     if (!parse_policy(policy_str, &policy)) {
         return exec_error("invalid policy");
+    }
+
+    if (mt && scheduler_running) {
+        return exec_error("MT cannot be used inside a running scheduler");
     }
 
     // Duplicate script names?
@@ -594,7 +688,9 @@ int exec_cmd(char *command_args[], int args_size) {
     }
 
     for (int k = 0; k < np; k++) {
-        if (policy == POLICY_AGING) {
+        if (mt) {
+            ready_queue_mt_enqueue(pcbs[k]);
+        } else if (policy == POLICY_AGING) {
             ready_queue_enqueue_aging(pcbs[k], 0);
         } else {
             ready_queue_enqueue(pcbs[k]);
@@ -627,7 +723,11 @@ int exec_cmd(char *command_args[], int args_size) {
         }
 
         // run first once
-        ready_queue_enqueue_front(batch);
+        if (mt) {
+            ready_queue_mt_enqueue_front(batch);
+        } else {
+            ready_queue_enqueue_front(batch);
+        }
     }
 
     if (scheduler_running) {
@@ -635,6 +735,28 @@ int exec_cmd(char *command_args[], int args_size) {
         return 0;
     }
 
+    if (mt) {
+        // MT only required for RR/RR30 in the assignment; reject others to be safe
+        if (!(policy == POLICY_RR || policy == POLICY_RR30)) {
+            if (!scheduler_running) {
+                mem_clear_program();
+            }
+            return exec_error("MT only supported for RR/RR30");
+        }
+
+        mt_start_workers_if_needed(policy);
+
+        // In MT mode, do NOT run the single-thread loop.
+        // Just wait until all queued work is done.
+        ready_queue_mt_wait_all_done();
+
+        if (!scheduler_running) {
+            mem_clear_program();
+        }
+        return 0;
+    }
+
+    // non-MT path
     int errCode = run_ready_queue_until_empty(policy);
     if (!scheduler_running) {
         mem_clear_program();

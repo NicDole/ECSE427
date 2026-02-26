@@ -1,11 +1,21 @@
 #include <stdlib.h>
 #include "scheduler.h"
 #include "shellmemory.h"
+#include <pthread.h>
 
 // Global ready queue for FCFS scheduling
 static struct ReadyQueue ready_queue;
 // Auto-incrementing PID counter
 static int next_pid = 1;
+
+// MT synchronization
+static pthread_mutex_t rq_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t rq_not_empty = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t rq_all_done = PTHREAD_COND_INITIALIZER;
+
+static int rq_shutdown = 0;
+// Number of workers currently holding a PCB (running a time slice)
+static int rq_active_workers = 0;
 
 void ready_queue_init(void) {
     ready_queue.head = NULL;
@@ -189,4 +199,94 @@ void ready_queue_enqueue_front(struct PCB *pcb) {
     if (ready_queue.tail == NULL) {
         ready_queue.tail = pcb;
     }
+}
+
+void ready_queue_mt_init(void) {
+    // Safe to call multiple times, but only needed once
+    rq_shutdown = 0;
+    rq_active_workers = 0;
+}
+
+void ready_queue_mt_enqueue(struct PCB *pcb) {
+    if (pcb == NULL) return;
+
+    pthread_mutex_lock(&rq_mutex);
+    // reuse existing enqueue logic, but without races
+    pcb->next = NULL;
+    if (ready_queue.head == NULL) {
+        ready_queue.head = pcb;
+        ready_queue.tail = pcb;
+    } else {
+        ready_queue.tail->next = pcb;
+        ready_queue.tail = pcb;
+    }
+    pthread_cond_signal(&rq_not_empty);
+    pthread_mutex_unlock(&rq_mutex);
+}
+
+void ready_queue_mt_enqueue_front(struct PCB *pcb) {
+    if (pcb == NULL) return;
+
+    pthread_mutex_lock(&rq_mutex);
+    pcb->next = ready_queue.head;
+    ready_queue.head = pcb;
+    if (ready_queue.tail == NULL) {
+        ready_queue.tail = pcb;
+    }
+    pthread_cond_signal(&rq_not_empty);
+    pthread_mutex_unlock(&rq_mutex);
+}
+
+struct PCB *ready_queue_mt_dequeue_blocking(void) {
+    pthread_mutex_lock(&rq_mutex);
+
+    while (ready_queue.head == NULL && !rq_shutdown) {
+        pthread_cond_wait(&rq_not_empty, &rq_mutex);
+    }
+
+    if (rq_shutdown && ready_queue.head == NULL) {
+        pthread_mutex_unlock(&rq_mutex);
+        return NULL;
+    }
+
+    // dequeue head
+    struct PCB *pcb = ready_queue.head;
+    ready_queue.head = ready_queue.head->next;
+    if (ready_queue.head == NULL) {
+        ready_queue.tail = NULL;
+    }
+    pcb->next = NULL;
+
+    rq_active_workers++;
+
+    pthread_mutex_unlock(&rq_mutex);
+    return pcb;
+}
+
+void ready_queue_mt_worker_done(void) {
+    pthread_mutex_lock(&rq_mutex);
+    rq_active_workers--;
+    if (rq_active_workers < 0) rq_active_workers = 0;
+
+    // If nobody is running and queue is empty, signal completion
+    if (rq_active_workers == 0 && ready_queue.head == NULL) {
+        pthread_cond_signal(&rq_all_done);
+    }
+    pthread_mutex_unlock(&rq_mutex);
+}
+
+void ready_queue_mt_wait_all_done(void) {
+    pthread_mutex_lock(&rq_mutex);
+    while (!(rq_active_workers == 0 && ready_queue.head == NULL)) {
+        pthread_cond_wait(&rq_all_done, &rq_mutex);
+    }
+    pthread_mutex_unlock(&rq_mutex);
+}
+
+void ready_queue_mt_shutdown(void) {
+    pthread_mutex_lock(&rq_mutex);
+    rq_shutdown = 1;
+    pthread_cond_broadcast(&rq_not_empty);
+    pthread_cond_broadcast(&rq_all_done);
+    pthread_mutex_unlock(&rq_mutex);
 }
