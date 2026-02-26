@@ -496,7 +496,7 @@ int exec_cmd(char *command_args[], int args_size) {
     }
 
     // Single program: same as source(prog1)
-    if (num_progs == 1 && !background) {
+    if (num_progs == 1 && !background && !scheduler_running) {
         return source(command_args[1]);
     }
 
@@ -507,7 +507,12 @@ int exec_cmd(char *command_args[], int args_size) {
     }
     int base_start = mem_get_program_line_count();
 
-    int L0 = mem_load_program(command_args[1]);
+    int L0;
+    if (scheduler_running) {
+        L0 = mem_append_program(command_args[1]);
+    } else {
+        L0 = mem_load_program(command_args[1]);
+    }
     if (L0 < 0) {
         if (!scheduler_running) {
             mem_clear_program();
