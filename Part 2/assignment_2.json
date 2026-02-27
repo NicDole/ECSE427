@@ -1,0 +1,245 @@
+{
+    "assignment": {
+      "course": "COMP 310 / ECSE 427",
+      "title": "Assignment #2: Multi-Process Scheduling",
+      "due": "2026-02-27T23:59:00",
+      "high_level_goal": "Extend the simulated OS to support running concurrent processes.",
+      "primary_tasks": [
+        "Implement the scheduling infrastructure",
+        "Extend the OS shell syntax to create concurrent processes (exec)",
+        "Implement scheduling policies for concurrent processes"
+      ],
+      "global_assumptions_restrictions": {
+        "no_real_threads_for_single_core_sim": true,
+        "scripts_fit_in_shell_memory_for_A2": true,
+        "shell_memory_capacity_reference": {
+          "max_lines_total_loaded": 1000
+        },
+        "max_line_length_chars": 100,
+        "output_matching": {
+          "must_match_expected_word_order": true,
+          "whitespace_and_capitalization_ignored": true,
+          "tie_breaking": {
+            "some_tests_have_two_acceptable_expected_outputs": true,
+            "only_need_match_one": true
+          }
+        }
+      },
+      "levels": [
+        {
+          "level_id": "1.2.1",
+          "name": "Implement scheduling infrastructure (via source running as a process)",
+          "goal": "Modify source to run SCRIPT through scheduler infrastructure (output should remain same as A1).",
+          "deliverables": {
+            "data_structures": [
+              {
+                "name": "Program lines storage in shell memory",
+                "goal": "Load full script into shell memory (not line-by-line execution).",
+                "restrictions": [
+                  "Encoding/layout is up to you",
+                  "Recommended shared structure for all processes; but per-process is allowed for A2"
+                ]
+              },
+              {
+                "name": "PCB (process control block)",
+                "goal": "Track process execution state for a script.",
+                "required_fields": [
+                  "pid_unique",
+                  "code_location_in_shell_memory (e.g., start_index, length)",
+                  "current_instruction_pointer (e.g., program counter/index)"
+                ]
+              },
+              {
+                "name": "Ready Queue",
+                "goal": "Store PCBs for runnable processes.",
+                "recommended_impl": "Linked list via next pointer in PCB; queue tracks head (and typically tail).",
+                "restrictions": [
+                  "Only one queue needed at a time is acceptable",
+                  "Separate queue interfaces/policies optional"
+                ]
+              }
+            ],
+            "scheduler_logic": {
+              "goal": "Execute process at head of ready queue under FCFS for this step.",
+              "rules": [
+                "Enqueue SCRIPT PCB at tail",
+                "Run head PCB by sending its current instruction to interpreter",
+                "On process completion: remove from queue and continue with next",
+                "Cleanup script code from shell memory when done"
+              ],
+              "policy": "FCFS"
+            }
+          },
+          "restrictions": {
+            "source_behavior": {
+              "file_path_exists_assumed": true,
+              "on_command_syntax_error": "print error and continue executing script",
+              "prompt_visibility": "no prompt during execution; prompt returns at end"
+            }
+          },
+          "success_condition": "source behaves identically to Assignment 1 while internally using scheduler."
+        },
+        {
+          "level_id": "1.2.2",
+          "name": "Extend shell with exec command (concurrent processes)",
+          "goal": "Add exec to run up to 3 scripts concurrently with a scheduling policy.",
+          "interface": {
+            "command": "exec prog1 [prog2 prog3] POLICY",
+            "valid_arg_counts": [2, 3, 4],
+            "policy_values": ["FCFS", "SJF", "RR", "AGING"],
+            "policy_position": "last_argument (for now)"
+          },
+          "behavior": {
+            "single_process": {
+              "rule": "exec prog1 POLICY must behave the same as source prog1 for any POLICY."
+            },
+            "multi_process": {
+              "rules": [
+                "Load full code of each program into shell memory",
+                "Create PCB per program",
+                "Add PCBs to ready queue according to policy (initially implement FCFS first)",
+                "On completion: remove PCB from queue and cleanup its code from shell memory"
+              ]
+            }
+          },
+          "error_handling_restrictions": {
+            "duplicate_script_names": {
+              "rule": "If any two exec program arguments are identical, print an error and terminate exec (return prompt or continue batch)."
+            },
+            "code_loading_error": {
+              "examples": ["file does not exist", "out of shell memory space"],
+              "rule": "If any loading error occurs, none of the programs should run; print error then prompt."
+            },
+            "post_exec_state": {
+              "rule": "When exec completes (non-background), ready queue must be empty and program-line space reset so next exec is independent."
+            }
+          },
+          "restrictions": {
+            "no_real_threads_for_A2_core": true,
+            "nested_exec_calls": {
+              "rule": "Assume scripts do not contain nested exec calls, except via background mode batch process."
+            }
+          }
+        },
+        {
+          "level_id": "1.2.3",
+          "name": "Add scheduling policies: SJF and RR",
+          "goal": "Extend scheduler to support SJF and RR.",
+          "policies": {
+            "SJF": {
+              "goal": "Run shortest jobs first.",
+              "job_length_estimate": "number_of_lines_in_script"
+            },
+            "RR": {
+              "goal": "Time-sliced fairness across processes.",
+              "time_slice": {
+                "unit": "instructions",
+                "value": 2
+              }
+            }
+          }
+        },
+        {
+          "level_id": "1.2.4",
+          "name": "SJF with Aging (policy AGING)",
+          "goal": "Prevent starvation by aging waiting jobs and selecting by job length score.",
+          "time_slice": {
+            "unit": "instructions",
+            "value": 1
+          },
+          "rules": [
+            "Each PCB tracks job_length_score",
+            "Initialize job_length_score = job_length (lines of code)",
+            "After each time slice: age all jobs in ready queue except the one that just ran (score -= 1, floor at 0)",
+            "If after aging any job has score lower than the job that just ran, schedule that lower-score job next",
+            "Keep queue sorted by job_length_score (recommended insertion-sort style enqueue)",
+            "Tie-breaking affects outputs; some tests accept two outputs"
+          ],
+          "restrictions": {
+            "score_min": 0
+          }
+        },
+        {
+          "level_id": "1.2.5",
+          "name": "Background mode + RR30",
+          "goal": "Approximate bash '&' behavior using optional '#' and add RR30 policy.",
+          "part_1_RR30": {
+            "policy": "RR30",
+            "time_slice": {
+              "unit": "instructions",
+              "value": 30
+            },
+            "rule": "Identical to RR except time slice is 30."
+          },
+          "part_2_background_exec": {
+            "interface": "exec prog1 [prog2 prog3] POLICY [#]",
+            "meaning_of_hash": "Run exec in background by converting remaining shell input into a batch script process (prog0) and scheduling it too.",
+            "rules": [
+              "Create batch script process from lines after the exec# command",
+              "Schedule batch script process along with other programs using same POLICY",
+              "Batch script process must run first (only its first scheduling); afterward it is scheduled normally",
+              "If batch script invokes exec, enqueue newly exec'd programs onto the same ready queue"
+            ],
+            "assumptions_restrictions": [
+              "Only one exec with '#' per testcase",
+              "'#' used only in batch mode",
+              "If an exec# uses policy P, all following exec commands in that testcase use the same P"
+            ]
+          }
+        },
+        {
+          "level_id": "1.2.6",
+          "name": "Multithreaded scheduler (MT option)",
+          "goal": "Enable 2-worker-thread scheduling via pthreads; tested only with RR and RR30.",
+          "interface": "exec prog1 [prog2 prog3] POLICY [#] [MT]",
+          "rules": [
+            "If MT present at end, enable multi-threaded scheduler",
+            "Create a pool of 2 worker threads using pthreads",
+            "Once enabled by one exec, MT remains enabled for rest of testcase (threads end only when quit is called)",
+            "With MT, output may be non-deterministic due to concurrent execution, but total printed lines per program must be correct",
+            "If quit is called while ready queue not empty, quit must join scheduler threads"
+          ],
+          "restrictions": {
+            "tested_policies_only": ["RR", "RR30"]
+          }
+        }
+      ],
+      "testing_and_submission": {
+        "testcases": {
+          "count": 20,
+          "grading_per_test": 4,
+          "batch_mode_used_by_TAs": true,
+          "run_command": "./mysh < <path>/testfile.txt"
+        },
+        "submission": {
+          "platform": "MyCourses",
+          "format": "zip of working directory",
+          "required_structure": [
+            "project-root/src/Makefile",
+            "project-root/src/(other source files)",
+            "project-root/test-cases/",
+            "project-root/explainer.mp4",
+            "project-root/README.txt"
+          ],
+          "build_command": "make clean; make mysh"
+        },
+        "video_requirement": {
+          "duration_minutes": 3,
+          "must_cover_sections": ["1.2.1", "1.2.2"],
+          "must_show": ["code visible", "camera on with presenter visible"],
+          "team_rule": "Either both on video or one appointed presenter"
+        },
+        "grading_breakdown": {
+          "total_points": 100,
+          "testcases_points": 80,
+          "code_review_and_video_points": 20,
+          "hardcoding_penalty": "Any hardcoded-output testcase gets 0 for that testcase",
+          "compile_or_run_failure": "0 for entire assignment if it does not compile/run as specified"
+        }
+      }
+    },
+    "source": {
+      "file": "Assignment_2_Winter2026.pdf",
+      "citation": ":contentReference[oaicite:0]{index=0}"
+    }
+  }

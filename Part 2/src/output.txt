@@ -1,0 +1,604 @@
+===== T_AGING2_result =====
+SKIP (no expected output for T_AGING2_result)
+===== T_AGING2 =====
+PASS T_AGING2
+
+===== T_AGING3_result =====
+SKIP (no expected output for T_AGING3_result)
+===== T_AGING3 =====
+PASS T_AGING3
+
+===== T_AGING4_result2 =====
+SKIP (no expected output for T_AGING4_result2)
+===== T_AGING4_result =====
+SKIP (no expected output for T_AGING4_result)
+===== T_AGING4 =====
+PASS T_AGING4
+
+===== T_AGING_result2 =====
+SKIP (no expected output for T_AGING_result2)
+===== T_AGING_result =====
+SKIP (no expected output for T_AGING_result)
+===== T_AGING =====
+PASS T_AGING
+
+===== T_background_result =====
+SKIP (no expected output for T_background_result)
+===== T_background =====
+PASS T_background
+
+===== T_exec_duplicate_result =====
+SKIP (no expected output for T_exec_duplicate_result)
+===== T_exec_duplicate =====
+PASS T_exec_duplicate
+
+===== T_exec_invalid_policy_result =====
+SKIP (no expected output for T_exec_invalid_policy_result)
+===== T_exec_invalid_policy =====
+PASS T_exec_invalid_policy
+
+===== T_exec_notfound_result =====
+SKIP (no expected output for T_exec_notfound_result)
+===== T_exec_notfound =====
+PASS T_exec_notfound
+
+===== T_exec_policies_result =====
+SKIP (no expected output for T_exec_policies_result)
+===== T_exec_policies =====
+PASS T_exec_policies
+
+===== T_exec_README =====
+SKIP (no expected output for T_exec_README)
+===== T_exec_single_result =====
+SKIP (no expected output for T_exec_single_result)
+===== T_exec_single =====
+PASS T_exec_single
+
+===== T_exec_two_result =====
+SKIP (no expected output for T_exec_two_result)
+===== T_exec_two =====
+PASS T_exec_two
+
+===== T_exec_usage_few_result =====
+SKIP (no expected output for T_exec_usage_few_result)
+===== T_exec_usage_few =====
+PASS T_exec_usage_few
+
+===== T_exec_usage_many_result =====
+SKIP (no expected output for T_exec_usage_many_result)
+===== T_exec_usage_many =====
+PASS T_exec_usage_many
+
+===== T_FCFS2_result =====
+SKIP (no expected output for T_FCFS2_result)
+===== T_FCFS2 =====
+PASS T_FCFS2
+
+===== T_FCFS3_result =====
+SKIP (no expected output for T_FCFS3_result)
+===== T_FCFS3 =====
+PASS T_FCFS3
+
+===== T_FCFS4_result =====
+SKIP (no expected output for T_FCFS4_result)
+===== T_FCFS4 =====
+PASS T_FCFS4
+
+===== T_FCFS_result =====
+SKIP (no expected output for T_FCFS_result)
+===== T_FCFS =====
+PASS T_FCFS
+
+===== T_MT1_result =====
+SKIP (no expected output for T_MT1_result)
+===== T_MT1 =====
+FAIL T_MT1
+--- T_MT1_result.txt	2026-02-20 23:36:37.035670500 +0000
++++ /tmp/tmp.3lot3LNm7Y	2026-02-27 20:31:48.463190195 +0000
+@@ -29,169 +29,115 @@
+ X
+ X
+ X
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-Bye!
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+ YY
+ YY
+-X
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
++YY
++YY
++YY
++YY
++YY
++YY
++YY
+ YY
+ YY
+ YY
+@@ -216,17 +162,8 @@
+ ZZZ
+ ZZZ
+ ZZZ
+-YY
+-YY
+-YY
+ ZZZ
+ ZZZ
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+ ZZZ
+ ZZZ
+ ZZZ
+@@ -235,12 +172,55 @@
+ ZZZ
+ ZZZ
+ ZZZ
+-YY
+-YY
+ ZZZ
+ ZZZ
+ ZZZ
+ ZZZ
++ZZZ
++ZZZ
++ZZZ
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
+ YY
+ YY
+ YY
+@@ -255,9 +235,6 @@
+ YY
+ YY
+ YY
+-ZZZ
+-ZZZ
+-ZZZ
+ YY
+ YY
+ YY
+@@ -292,6 +269,36 @@
+ ZZZ
+ ZZZ
+ ZZZ
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
+ ZZZ
+ ZZZ
+ ZZZ
+@@ -322,11 +329,4 @@
+ ZZZ
+ ZZZ
+ ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+\ No newline at end of file
++Bye!
+
+===== T_MT2_result =====
+SKIP (no expected output for T_MT2_result)
+===== T_MT2 =====
+FAIL T_MT2
+--- T_MT2_result.txt	2026-02-20 23:36:36.945561000 +0000
++++ /tmp/tmp.3lot3LNm7Y	2026-02-27 20:31:49.182549751 +0000
+@@ -38,28 +38,6 @@
+ YY
+ YY
+ YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+ X
+ X
+ X
+@@ -90,36 +68,16 @@
+ X
+ X
+ X
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
+ X
+ X
+ X
+@@ -180,16 +138,6 @@
+ YY
+ YY
+ YY
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+ YY
+ YY
+ YY
+@@ -209,4 +157,56 @@
+ YY
+ YY
+ YY
+-YY
+\ No newline at end of file
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
+
+===== T_MT3_result =====
+SKIP (no expected output for T_MT3_result)
+===== T_MT3 =====

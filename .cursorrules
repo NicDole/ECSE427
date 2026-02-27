@@ -1,0 +1,25 @@
+# Function Documentation Format
+
+Use `/** */` block comments for function and API descriptions (e.g. in headers and above function definitions). Structure:
+
+```c
+/**
+ * Brief description ending with period.
+ *
+ * Optional detailed description paragraph.
+ *
+ * @param name Description
+ * @return Description
+ */
+```
+
+Rules: Blank line after brief, blank line before @param/@return, blank line between tags. No @brief tag.
+
+# Code Comments Style (inline)
+
+Use `//` only for inline code comments, and only when the comment fits on one line.
+
+- In implementation files (.c), add concise one-line `//` comments to explain logic.
+- Comment global variables, key operations, edge cases, important decisions.
+- Don't repeat header documentation.
+- Keep comments short and focused on "what/why", not "how".

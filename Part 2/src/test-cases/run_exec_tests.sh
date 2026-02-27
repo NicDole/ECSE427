@@ -1,27 +1,66 @@
 #!/bin/bash
-# Run 1.2.2 and 1.2.3 exec tests from test-cases directory (so P_short, P_prog1, etc. are in cwd).
-# Usage: cd test-cases && ./run_exec_tests.sh
+# Run all tests in this directory.
+# A "test" is any input `*.txt` file that has one or more matching expected output files:
+#   <name>_result*.txt
+#
+# You can run this script from anywhere; it will `cd` into `test-cases/` automatically.
 
 set -e
-MYSH="../mysh"
-TESTS="T_exec_single T_exec_two T_exec_invalid_policy T_exec_usage_few T_exec_usage_many T_exec_duplicate T_exec_notfound T_exec_policies T_FCFS T_SJF T_RR T_AGING"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
-for t in $TESTS; do
-  if [ ! -f "${t}.txt" ]; then
-    echo "SKIP ${t} (no ${t}.txt)"
+MYSH="../mysh"
+
+shopt -s nullglob
+
+pass=0
+fail=0
+skip=0
+total=0
+
+for input in *.txt; do
+  case "$input" in
+    *_result*.txt) continue ;;
+    *README*.txt) continue ;;
+  esac
+
+  t="${input%.txt}"
+  expected_files=( "${t}_result"*.txt )
+
+  if [ "${#expected_files[@]}" -eq 0 ]; then
+    echo "SKIP ${t} (no ${t}_result*.txt)"
+    skip=$((skip + 1))
     continue
   fi
-  if [ ! -f "${t}_result.txt" ]; then
-    echo "SKIP ${t} (no ${t}_result.txt)"
-    continue
-  fi
-  out=$(mktemp)
-  $MYSH < "${t}.txt" 2>/dev/null > "$out" || true
-  if diff -q "$out" "${t}_result.txt" > /dev/null 2>&1; then
+
+  total=$((total + 1))
+
+  out="$(mktemp)"
+  "$MYSH" < "$input" 2>/dev/null > "$out" || true
+
+  matched=0
+  for expected in "${expected_files[@]}"; do
+    if diff -q "$out" "$expected" > /dev/null 2>&1; then
+      matched=1
+      break
+    fi
+  done
+
+  if [ "$matched" -eq 1 ]; then
     echo "PASS ${t}"
+    pass=$((pass + 1))
   else
     echo "FAIL ${t}"
-    diff -u "${t}_result.txt" "$out" || true
+    diff -u "${expected_files[0]}" "$out" || true
+    fail=$((fail + 1))
   fi
+
   rm -f "$out"
 done
+
+echo
+echo "Summary: total=${total} pass=${pass} fail=${fail} skip=${skip}"
+
+if [ "$fail" -ne 0 ]; then
+  exit 1
+fi

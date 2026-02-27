@@ -1,0 +1,375 @@
+SKIP output (no output_result*.txt)
+PASS T_AGING2
+PASS T_AGING3
+PASS T_AGING4
+PASS T_AGING
+PASS T_background
+PASS T_exec_duplicate
+PASS T_exec_invalid_policy
+PASS T_exec_notfound
+PASS T_exec_policies
+PASS T_exec_single
+PASS T_exec_two
+PASS T_exec_usage_few
+PASS T_exec_usage_many
+PASS T_FCFS2
+PASS T_FCFS3
+PASS T_FCFS4
+PASS T_FCFS
+FAIL T_MT1
+--- T_MT1_result.txt	2026-02-20 23:36:37.035670500 +0000
++++ /tmp/tmp.vs4O4TYTHV	2026-02-27 19:27:19.384155989 +0000
+@@ -29,169 +29,115 @@
+ X
+ X
+ X
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-Bye!
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
++ZZZ
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+-YY
+-YY
+ X
+ X
+ YY
+ YY
+-X
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
+ YY
+ YY
+-X
+-X
++YY
++YY
++YY
++YY
++YY
++YY
++YY
+ YY
+ YY
+ YY
+@@ -216,17 +162,8 @@
+ ZZZ
+ ZZZ
+ ZZZ
+-YY
+-YY
+-YY
+ ZZZ
+ ZZZ
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+ ZZZ
+ ZZZ
+ ZZZ
+@@ -235,12 +172,55 @@
+ ZZZ
+ ZZZ
+ ZZZ
+-YY
+-YY
+ ZZZ
+ ZZZ
+ ZZZ
+ ZZZ
++ZZZ
++ZZZ
++ZZZ
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
+ YY
+ YY
+ YY
+@@ -255,9 +235,6 @@
+ YY
+ YY
+ YY
+-ZZZ
+-ZZZ
+-ZZZ
+ YY
+ YY
+ YY
+@@ -292,6 +269,36 @@
+ ZZZ
+ ZZZ
+ ZZZ
++X
++X
++X
++X
++X
++X
++X
++X
++X
++X
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
++YY
+ ZZZ
+ ZZZ
+ ZZZ
+@@ -322,11 +329,4 @@
+ ZZZ
+ ZZZ
+ ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+\ No newline at end of file
++Bye!
+FAIL T_MT2
+--- T_MT2_result.txt	2026-02-20 23:36:36.945561000 +0000
++++ /tmp/tmp.kmLOBDiixO	2026-02-27 19:27:19.429178493 +0000
+@@ -209,4 +209,4 @@
+ YY
+ YY
+ YY
+-YY
+\ No newline at end of file
++YY

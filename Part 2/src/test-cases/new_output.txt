@@ -1,0 +1,1951 @@
+===== T_AGING2_result =====
+SKIP (no expected output for T_AGING2_result)
+===== T_AGING2 =====
+FAIL T_AGING2
+--- test-cases/T_AGING2_result.txt	2026-02-20 23:36:37.094647100 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:16.762009233 +0000
+@@ -1,26 +1,4 @@
+ Shell version 1.5 created Dec 2025
+-f2is3lines
+-f2is3lines
+-f1is5lines
+-f1is5lines
+-f3is7lines
+-f1is5lines
+-f1is5lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f2is3lines
+-f2is3lines
+-f1is5lines
+-f1is5lines
+-f3is7lines
+-f1is5lines
+-f1is5lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
++Bad command: File not found
++Bad command: File not found
+ Bye!
+
+===== T_AGING3_result =====
+SKIP (no expected output for T_AGING3_result)
+===== T_AGING3 =====
+FAIL T_AGING3
+--- test-cases/T_AGING3_result.txt	2026-02-20 23:36:36.913568000 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:17.504009292 +0000
+@@ -1,14 +1,4 @@
+ Shell version 1.5 created Dec 2025
+-fA
+-fA
+-fA
+-1
+-2
+-goodluck
+-fA
+-fA
+-fA
+-1
+-2
+-goodluck
++Bad command: File not found
++Bad command: File not found
+ Bye!
+
+===== T_AGING4_result2 =====
+SKIP (no expected output for T_AGING4_result2)
+===== T_AGING4_result =====
+SKIP (no expected output for T_AGING4_result)
+===== T_AGING4 =====
+FAIL T_AGING4
+--- test-cases/T_AGING4_result.txt	2026-02-20 23:36:36.804183200 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:18.545009376 +0000
+@@ -1,22 +1,6 @@
+ Shell version 1.5 created Dec 2025
+ AGING
+-file1
+-file2
+-file3
+-file3
+-file2
+-file2
+-file1
+-file1
+-file3
++Bad command: File not found
+ SJF
+-file1
+-file1
+-file1
+-file2
+-file2
+-file2
+-file3
+-file3
+-file3
++Bad command: File not found
+ Bye!
+
+===== T_AGING_result2 =====
+SKIP (no expected output for T_AGING_result2)
+===== T_AGING_result =====
+SKIP (no expected output for T_AGING_result)
+===== T_AGING =====
+FAIL T_AGING
+--- test-cases/T_AGING_result.txt	2026-02-20 23:36:36.784493000 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:19.699009468 +0000
+@@ -1,21 +1,3 @@
+ Shell version 1.5 created Dec 2025
+-P1L1
+-OOOOP3L1OOOO
+-OOOOP3L2OOOO
+-P1L2
+-OOP2L1OO
+-OOP2L2OO
+-P1L3
+-OOOOP3L3OOOO
+-OOOOP3L4OOOO
+-P1L4
+-P1L5
+-P1L6
+-OOP2L3OO
+-OOP2L4OO
+-OOP2L5OO
+-OOP2L6OO
+-OOP2L7OO
+-OOOOP3L5OOOO
+-OOOOP3L6OOOO
++Bad command: File not found
+ Bye!
+
+===== T_background_result =====
+SKIP (no expected output for T_background_result)
+===== T_background =====
+FAIL T_background
+--- test-cases/T_background_result.txt	2026-02-20 23:36:37.069587900 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:20.438009527 +0000
+@@ -1,6 +1,5 @@
+ Shell version 1.5 created Dec 2025
++Bad command: File not found
+ shell
+ shell
+-short_program
+-quit
+-Bye!
++Bad command: File not found
+
+===== T_exec_duplicate_result =====
+SKIP (no expected output for T_exec_duplicate_result)
+===== T_exec_duplicate =====
+FAIL T_exec_duplicate
+--- test-cases/T_exec_duplicate_result.txt	2026-02-21 00:25:11.203282500 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:21.176009586 +0000
+@@ -1,4 +1,4 @@
+ Shell version 1.5 created Dec 2025
+ Bad command: duplicate script names
+-short_program
++Bad command: File not found
+ Bye!
+
+===== T_exec_invalid_policy_result =====
+SKIP (no expected output for T_exec_invalid_policy_result)
+===== T_exec_invalid_policy =====
+FAIL T_exec_invalid_policy
+--- test-cases/T_exec_invalid_policy_result.txt	2026-02-21 00:25:06.550308600 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:21.933009647 +0000
+@@ -1,4 +1,4 @@
+ Shell version 1.5 created Dec 2025
+ Bad command: invalid policy
+-short_program
++Bad command: File not found
+ Bye!
+
+===== T_exec_notfound_result =====
+SKIP (no expected output for T_exec_notfound_result)
+===== T_exec_notfound =====
+FAIL T_exec_notfound
+--- test-cases/T_exec_notfound_result.txt	2026-02-21 00:25:12.695291000 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:22.663009705 +0000
+@@ -1,4 +1,4 @@
+ Shell version 1.5 created Dec 2025
+ Bad command: File not found
+-short_program
++Bad command: File not found
+ Bye!
+
+===== T_exec_policies_result =====
+SKIP (no expected output for T_exec_policies_result)
+===== T_exec_policies =====
+FAIL T_exec_policies
+--- test-cases/T_exec_policies_result.txt	2026-02-21 00:25:14.557268200 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:23.355009761 +0000
+@@ -1,6 +1,6 @@
+ Shell version 1.5 created Dec 2025
+-short_program
+-short_program
+-short_program
+-short_program
++Bad command: File not found
++Bad command: File not found
++Bad command: File not found
++Bad command: File not found
+ Bye!
+
+===== T_exec_README =====
+SKIP (no expected output for T_exec_README)
+===== T_exec_single_result =====
+SKIP (no expected output for T_exec_single_result)
+===== T_exec_single =====
+FAIL T_exec_single
+--- test-cases/T_exec_single_result.txt	2026-02-21 00:25:02.584509500 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:24.390009843 +0000
+@@ -1,3 +1,3 @@
+ Shell version 1.5 created Dec 2025
+-short_program
++Bad command: File not found
+ Bye!
+
+===== T_exec_two_result =====
+SKIP (no expected output for T_exec_two_result)
+===== T_exec_two =====
+FAIL T_exec_two
+--- test-cases/T_exec_two_result.txt	2026-02-21 00:25:05.105209900 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:25.072009898 +0000
+@@ -1,15 +1,3 @@
+ Shell version 1.5 created Dec 2025
+-P1L1
+-P1L2
+-P1L3
+-P1L4
+-P1L5
+-P1L6
+-OOP2L1OO
+-OOP2L2OO
+-OOP2L3OO
+-OOP2L4OO
+-OOP2L5OO
+-OOP2L6OO
+-OOP2L7OO
++Bad command: File not found
+ Bye!
+
+===== T_exec_usage_few_result =====
+SKIP (no expected output for T_exec_usage_few_result)
+===== T_exec_usage_few =====
+PASS T_exec_usage_few
+
+===== T_exec_usage_many_result =====
+SKIP (no expected output for T_exec_usage_many_result)
+===== T_exec_usage_many =====
+PASS T_exec_usage_many
+
+===== T_FCFS2_result =====
+SKIP (no expected output for T_FCFS2_result)
+===== T_FCFS2 =====
+FAIL T_FCFS2
+--- test-cases/T_FCFS2_result.txt	2026-02-20 23:36:36.997216100 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:27.130010063 +0000
+@@ -1,20 +1,4 @@
+ Shell version 1.5 created Dec 2025
+-f1is5lines
+-f1is5lines
+-f1is5lines
+-f1is5lines
+-f2is3lines
+-f2is3lines
+-f1is5lines
+-f1is5lines
+-f1is5lines
+-f1is5lines
+-f2is3lines
+-f2is3lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
++Bad command: File not found
++Bad command: File not found
+ Bye!
+
+===== T_FCFS3_result =====
+SKIP (no expected output for T_FCFS3_result)
+===== T_FCFS3 =====
+FAIL T_FCFS3
+--- test-cases/T_FCFS3_result.txt	2026-02-20 23:36:36.846632900 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:27.823010118 +0000
+@@ -1,11 +1,4 @@
+ Shell version 1.5 created Dec 2025
+-fA
+-fA
+-fA
+-fA
+-fA
+-fA
+-1
+-2
+-goodluck
++Bad command: File not found
++Bad command: File not found
+ Bye!
+
+===== T_FCFS4_result =====
+SKIP (no expected output for T_FCFS4_result)
+===== T_FCFS4 =====
+FAIL T_FCFS4
+--- test-cases/T_FCFS4_result.txt	2026-02-20 23:36:36.889959600 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:28.510010173 +0000
+@@ -1,11 +1,3 @@
+ Shell version 1.5 created Dec 2025
+-file1
+-file1
+-file1
+-file2
+-file2
+-file2
+-file3
+-file3
+-file3
++Bad command: File not found
+ Bye!
+
+===== T_FCFS_result =====
+SKIP (no expected output for T_FCFS_result)
+===== T_FCFS =====
+FAIL T_FCFS
+--- test-cases/T_FCFS_result.txt	2026-02-20 23:36:37.075975600 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:29.231010231 +0000
+@@ -1,21 +1,3 @@
+ Shell version 1.5 created Dec 2025
+-P1L1
+-P1L2
+-P1L3
+-P1L4
+-P1L5
+-P1L6
+-OOP2L1OO
+-OOP2L2OO
+-OOP2L3OO
+-OOP2L4OO
+-OOP2L5OO
+-OOP2L6OO
+-OOP2L7OO
+-OOOOP3L1OOOO
+-OOOOP3L2OOOO
+-OOOOP3L3OOOO
+-OOOOP3L4OOOO
+-OOOOP3L5OOOO
+-OOOOP3L6OOOO
++Bad command: File not found
+ Bye!
+
+===== T_MT1_result =====
+SKIP (no expected output for T_MT1_result)
+===== T_MT1 =====
+FAIL T_MT1
+--- test-cases/T_MT1_result.txt	2026-02-20 23:36:37.035670500 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:29.952010289 +0000
+@@ -1,332 +1,3 @@
+ Shell version 1.5 created Dec 2025
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
++Bad command: File not found
+ Bye!
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-X
+-X
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-YY
+-YY
+-YY
+-ZZZ
+-ZZZ
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-YY
+-YY
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-ZZZ
+-ZZZ
+-ZZZ
+-YY
+-YY
+-YY
+-YY
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+\ No newline at end of file
+
+===== T_MT2_result =====
+SKIP (no expected output for T_MT2_result)
+===== T_MT2 =====
+FAIL T_MT2
+--- test-cases/T_MT2_result.txt	2026-02-20 23:36:36.945561000 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:30.642010344 +0000
+@@ -1,212 +1,3 @@
+ Shell version 1.5 created Dec 2025
++Bad command: File not found
+ Bye!
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+\ No newline at end of file
+
+===== T_MT3_result =====
+SKIP (no expected output for T_MT3_result)
+===== T_MT3 =====
+FAIL T_MT3
+--- test-cases/T_MT3_result.txt	2026-02-20 23:36:37.105923400 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:31.335010399 +0000
+@@ -1,332 +1,4 @@
+ Shell version 1.5 created Dec 2025
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
++Bad command: File not found
++Bad command: File not found
+ Bye!
+-ZZZ
+-ZZZ
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+\ No newline at end of file
+
+===== T_RR2_result =====
+SKIP (no expected output for T_RR2_result)
+===== T_RR2 =====
+FAIL T_RR2
+--- test-cases/T_RR2_result.txt	2026-02-20 23:36:36.842138800 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:32.014010454 +0000
+@@ -1,26 +1,4 @@
+ Shell version 1.5 created Dec 2025
+-f1is5lines
+-f2is3lines
+-f3is7lines
+-f1is5lines
+-f1is5lines
+-f2is3lines
+-f3is7lines
+-f3is7lines
+-f1is5lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f1is5lines
+-f2is3lines
+-f3is7lines
+-f1is5lines
+-f1is5lines
+-f2is3lines
+-f3is7lines
+-f3is7lines
+-f1is5lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
++Bad command: File not found
++Bad command: File not found
+ Bye!
+
+===== T_RR30_2_result =====
+SKIP (no expected output for T_RR30_2_result)
+===== T_RR30_2 =====
+FAIL T_RR30_2
+--- test-cases/T_RR30_2_result.txt	2026-02-20 23:36:36.779020300 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:32.712010510 +0000
+@@ -1,94 +1,4 @@
+ Shell version 1.5 created Dec 2025
++Bad command: File not found
+ shell
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-quit
+-Bye!
++Bad command: File not found
+
+===== T_RR30_result =====
+SKIP (no expected output for T_RR30_result)
+===== T_RR30 =====
+FAIL T_RR30
+--- test-cases/T_RR30_result.txt	2026-02-20 23:36:36.991360600 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:33.427010567 +0000
+@@ -1,333 +1,4 @@
+ Shell version 1.5 created Dec 2025
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-X
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-YY
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
+-ZZZ
++Bad command: File not found
+ shell
+ Bye!
+
+===== T_RR3_result =====
+SKIP (no expected output for T_RR3_result)
+===== T_RR3 =====
+FAIL T_RR3
+--- test-cases/T_RR3_result.txt	2026-02-20 23:36:37.003646000 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:34.112010622 +0000
+@@ -1,14 +1,4 @@
+ Shell version 1.5 created Dec 2025
+-fA
+-fA
+-1
+-fA
+-2
+-goodluck
+-fA
+-fA
+-1
+-fA
+-2
+-goodluck
++Bad command: File not found
++Bad command: File not found
+ Bye!
+
+===== T_RR4_result =====
+SKIP (no expected output for T_RR4_result)
+===== T_RR4 =====
+FAIL T_RR4
+--- test-cases/T_RR4_result.txt	2026-02-20 23:36:37.123656400 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:34.811010678 +0000
+@@ -1,14 +1,4 @@
+ Shell version 1.5 created Dec 2025
+-fA
+-fA
+-1
+-fA
+-2
+-goodluck
+-1
+-fA
+-fA
+-2
+-fA
+-goodluck
++Bad command: File not found
++Bad command: File not found
+ Bye!
+
+===== T_RR_result =====
+SKIP (no expected output for T_RR_result)
+===== T_RR =====
+FAIL T_RR
+--- test-cases/T_RR_result.txt	2026-02-20 23:36:36.855991000 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:35.485010731 +0000
+@@ -1,21 +1,3 @@
+ Shell version 1.5 created Dec 2025
+-P1L1
+-P1L2
+-OOP2L1OO
+-OOP2L2OO
+-OOOOP3L1OOOO
+-OOOOP3L2OOOO
+-P1L3
+-P1L4
+-OOP2L3OO
+-OOP2L4OO
+-OOOOP3L3OOOO
+-OOOOP3L4OOOO
+-P1L5
+-P1L6
+-OOP2L5OO
+-OOP2L6OO
+-OOOOP3L5OOOO
+-OOOOP3L6OOOO
+-OOP2L7OO
++Bad command: File not found
+ Bye!
+
+===== T_SJF2_result =====
+SKIP (no expected output for T_SJF2_result)
+===== T_SJF2 =====
+FAIL T_SJF2
+--- test-cases/T_SJF2_result.txt	2026-02-20 23:36:37.063731800 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:36.189010788 +0000
+@@ -1,38 +1,5 @@
+ Shell version 1.5 created Dec 2025
+-f2is3lines
+-f2is3lines
+-f1is5lines
+-f1is5lines
+-f1is5lines
+-f1is5lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f2is3lines
+-f2is3lines
+-f1is5lines
+-f1is5lines
+-f1is5lines
+-f1is5lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f2is3lines
+-f2is3lines
+-f1is5lines
+-f1is5lines
+-f1is5lines
+-f1is5lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
+-f3is7lines
++Bad command: File not found
++Bad command: File not found
++Bad command: File not found
+ Bye!
+
+===== T_SJF3_result =====
+SKIP (no expected output for T_SJF3_result)
+===== T_SJF3 =====
+FAIL T_SJF3
+--- test-cases/T_SJF3_result.txt	2026-02-20 23:36:36.754887400 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:36.883010843 +0000
+@@ -1,20 +1,5 @@
+ Shell version 1.5 created Dec 2025
+-fA
+-fA
+-fA
+-1
+-2
+-goodluck
+-fA
+-fA
+-fA
+-1
+-2
+-goodluck
+-fA
+-fA
+-fA
+-1
+-2
+-goodluck
++Bad command: File not found
++Bad command: File not found
++Bad command: File not found
+ Bye!
+
+===== T_SJF4_result =====
+SKIP (no expected output for T_SJF4_result)
+===== T_SJF4 =====
+FAIL T_SJF4
+--- test-cases/T_SJF4_result.txt	2026-02-20 23:36:36.977557900 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:37.573010899 +0000
+@@ -1,4 +1,2 @@
+ Shell version 1.5 created Dec 2025
+-short_program
+-quit
+-Bye!
++Bad command: File not found
+
+===== T_SJF_result =====
+SKIP (no expected output for T_SJF_result)
+===== T_SJF =====
+FAIL T_SJF
+--- test-cases/T_SJF_result.txt	2026-02-20 23:36:37.021413000 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:38.278010955 +0000
+@@ -1,21 +1,3 @@
+ Shell version 1.5 created Dec 2025
+-P1L1
+-P1L2
+-P1L3
+-P1L4
+-P1L5
+-P1L6
+-OOOOP3L1OOOO
+-OOOOP3L2OOOO
+-OOOOP3L3OOOO
+-OOOOP3L4OOOO
+-OOOOP3L5OOOO
+-OOOOP3L6OOOO
+-OOP2L1OO
+-OOP2L2OO
+-OOP2L3OO
+-OOP2L4OO
+-OOP2L5OO
+-OOP2L6OO
+-OOP2L7OO
++Bad command: File not found
+ Bye!
+
+===== T_source_result =====
+SKIP (no expected output for T_source_result)
+===== T_source =====
+FAIL T_source
+--- test-cases/T_source_result.txt	2026-02-20 23:36:36.952964000 +0000
++++ /tmp/tmp.b9YY8pWh8e	2026-02-27 20:23:38.986011012 +0000
+@@ -1,3 +1,3 @@
+ Shell version 1.5 created Dec 2025
+-short_program
++Bad command: File not found
+ Bye!
+
+Summary: pass=2 fail=29 skip=34
