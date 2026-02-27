@@ -450,8 +450,14 @@ static void mt_stop_workers_if_running(void) {
 
     ready_queue_mt_shutdown();
 
-    pthread_join(mt_workers[0], NULL);
-    pthread_join(mt_workers[1], NULL);
+    pthread_t self = pthread_self();
+
+    if (!pthread_equal(self, mt_workers[0])) {
+        pthread_join(mt_workers[0], NULL);
+    }
+    if (!pthread_equal(self, mt_workers[1])) {
+        pthread_join(mt_workers[1], NULL);
+    }
 
     mt_enabled = 0;
 }
