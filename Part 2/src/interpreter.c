@@ -69,7 +69,7 @@ static void *mt_worker_main(void *arg);
 static void mt_start_workers_if_needed(SchedulePolicy policy);
 static void mt_stop_workers_if_running(void);
 static pthread_mutex_t parse_mutex = PTHREAD_MUTEX_INITIALIZER;
-
+static volatile int mt_quit_requested = 0;
 // Run ready queue until empty; policy controls quantum (0 = run to completion).
 static int run_ready_queue_until_empty(SchedulePolicy policy);
 
@@ -179,8 +179,20 @@ exec prog1 [prog2 prog3] POLICY	Executes up to 3 programs (FCFS, SJF, RR, RR30, 
 
 int quit() {
     if (mt_enabled) {
+        // If quit is executed as part of a scheduled program,
+        // it may be running inside a worker thread. Do NOT exit
+        // the whole process from a worker.
+        pthread_t self = pthread_self();
+        if (pthread_equal(self, mt_workers[0]) || pthread_equal(self, mt_workers[1])) {
+            mt_quit_requested = 1;
+            ready_queue_mt_shutdown();   // wake workers, stop new work
+            return 0;                    // return to worker loop cleanly
+        }
+
+        // Main thread path: stop workers normally
         mt_stop_workers_if_running();
     }
+
     printf("Bye!\n");
     exit(0);
 }
@@ -488,11 +500,18 @@ static void *mt_worker_main(void *arg) {
             parseInput(instruction);
             pthread_mutex_unlock(&parse_mutex);
 
+            if (mt_quit_requested) {
+                // Stop running this PCB and do not re-enqueue it
+                break;
+            }
+
             pcb_advance(pcb);
             steps++;
         }
 
-        if (pcb_is_done(pcb)) {
+        if (mt_quit_requested) {
+            pcb_free(pcb);
+        } else if (pcb_is_done(pcb)) {
             pcb_free(pcb);
         } else {
             ready_queue_mt_enqueue(pcb);
@@ -752,9 +771,16 @@ int exec_cmd(char *command_args[], int args_size) {
 
         mt_start_workers_if_needed(policy);
 
-        // In MT mode, do NOT run the single-thread loop.
-        // Just wait until all queued work is done.
+        // Wait until queue empty and no workers active
         ready_queue_mt_wait_all_done();
+
+        // If quit was requested inside a worker (like batch + #),
+        // join workers, print Bye, and exit from main thread.
+        if (mt_quit_requested) {
+            mt_stop_workers_if_running();
+            printf("Bye!\n");
+            exit(0);
+        }
 
         if (!scheduler_running) {
             mem_clear_program();
