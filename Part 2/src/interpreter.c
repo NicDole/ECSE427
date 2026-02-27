@@ -184,9 +184,10 @@ int quit() {
         // the whole process from a worker.
         pthread_t self = pthread_self();
         if (pthread_equal(self, mt_workers[0]) || pthread_equal(self, mt_workers[1])) {
-            mt_quit_requested = 1;
-            ready_queue_mt_shutdown();   // wake workers, stop new work
-            return 0;                    // return to worker loop cleanly
+            // In MT tests, quit inside a scheduled program should print Bye!
+            // but allow the rest of the ready queue to finish executing.
+            printf("Bye!\n");
+            return 0;
         }
 
         // Main thread path: stop workers normally
@@ -573,6 +574,8 @@ static int parse_policy(char *policy_str, SchedulePolicy *out) {
 int exec_cmd(char *command_args[], int args_size) {
     int background = 0;
     int mt = 0;
+    // Reset MT quit flag for each new exec invocation
+    mt_quit_requested = 0;
 
     // consume optional trailing flags in any order
     while (args_size > 0) {
@@ -595,7 +598,8 @@ int exec_cmd(char *command_args[], int args_size) {
     SchedulePolicy policy;
 
     if (num_progs < 1 || num_progs > 3) {
-        return exec_error("exec usage");
+        // Wrong number of program arguments: behave like other syntax errors.
+        return badcommand();
     }
     if (!parse_policy(policy_str, &policy)) {
         return exec_error("invalid policy");
