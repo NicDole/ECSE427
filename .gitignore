@@ -1,3 +1,5 @@
 #Avoids pushing compiled files to the repository
 *.o
 mysh
+
+A3-2026
