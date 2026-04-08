@@ -457,7 +457,6 @@ struct PCB *run_pcb_for_n_steps(struct PCB *pcb, size_t n) {
     }
 }
 
-static int background = false;
 static struct queue *q = NULL;
 static const struct schedule_policy *policy = NULL;
 
@@ -542,6 +541,8 @@ static void reset_backing_store(void) {
 }
 
 // Look up an entry in the backing store by filename. Returns NULL if not found.
+// Used by the page fault handler (Section C).
+static struct backing_entry *find_backing_entry(const char *filename) __attribute__((unused));
 static struct backing_entry *find_backing_entry(const char *filename) {
     for (int i = 0; i < backing_count; i++) {
         if (strcmp(backing_store[i].filename, filename) == 0)
