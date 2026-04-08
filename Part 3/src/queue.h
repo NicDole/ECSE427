@@ -27,3 +27,7 @@ struct PCB *dequeue_typical(struct queue *q);
 struct PCB *dequeue_aging(struct queue *q);
 
 bool is_queue_empty(struct queue *q);
+
+// Returns the head PCB without removing it (NULL if empty).
+// Used by the page fault handler to walk and invalidate stale pagetable entries.
+struct PCB *queue_peek_head(struct queue *q);

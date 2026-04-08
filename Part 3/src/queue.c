@@ -140,3 +140,8 @@ bool is_queue_empty(struct queue *q) {
     if (q == NULL) return true;
     return q->head == NULL;
 }
+
+struct PCB *queue_peek_head(struct queue *q) {
+    if (q == NULL) return NULL;
+    return q->head;
+}

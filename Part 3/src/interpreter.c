@@ -419,6 +419,92 @@ int source(char *script) {
 }
 
 
+static struct queue *q = NULL;
+static const struct schedule_policy *policy = NULL;
+
+// ---------------------------------------------------------------------------
+// Reverse map: frame number → which program/page currently occupies it.
+// Updated whenever a frame is loaded (initial or on-demand) or replaced.
+// ---------------------------------------------------------------------------
+struct frame_owner {
+    char  *filename;  // strdup'd name of the program that owns this frame
+    size_t page_num;  // logical page index within that program
+};
+static struct frame_owner frame_owners[FRAME_COUNT];
+
+// ---------------------------------------------------------------------------
+// Page fault detection and handling
+// ---------------------------------------------------------------------------
+
+// Returns 1 if the page needed for pcb's current pc is already in the frame
+// store, 0 if it needs to be loaded (pagetable entry is -1).
+static int next_page_is_loaded(struct PCB *pcb) {
+    size_t page = pcb->pc / FRAME_SIZE;
+    return pcb->pagetable[page] != -1;
+}
+
+// Handle a page fault for pcb. Loads the missing page into a free frame, or
+// evicts a random victim if the frame store is full. Updates all affected
+// page tables and the reverse map. Always prints "Page fault!".
+static void handle_page_fault(struct PCB *pcb) {
+    size_t page = pcb->pc / FRAME_SIZE;
+    printf("Page fault!\n");
+
+    // Get this page's lines from the backing store.
+    struct backing_entry *entry = find_backing_entry(pcb->name);
+    const char *lines[FRAME_SIZE];
+    for (int i = 0; i < FRAME_SIZE; i++) {
+        size_t idx = page * FRAME_SIZE + i;
+        lines[i] = (idx < entry->line_count) ? entry->lines[idx] : NULL;
+    }
+
+    int frame = allocate_frame(lines);  // -1 if frame store is full
+
+    if (frame >= 0) {
+        // A free frame was available — just record ownership.
+        pcb->pagetable[page] = frame;
+        free(frame_owners[frame].filename);
+        frame_owners[frame].filename = strdup(pcb->name);
+        frame_owners[frame].page_num = page;
+    } else {
+        // Frame store full — pick a random victim frame to evict.
+        int victim = rand() % FRAME_COUNT;
+
+        // Print victim page contents before eviction.
+        printf("Victim page contents:\n");
+        for (int i = 0; i < FRAME_SIZE; i++) {
+            const char *line = get_frame_line(victim, i);
+            if (line) printf("%s", line);
+        }
+        printf("End of victim page contents.\n");
+
+        // Invalidate the victim frame in all queued PCBs that reference it.
+        char  *victim_fname = frame_owners[victim].filename;
+        size_t victim_page  = frame_owners[victim].page_num;
+
+        if (victim_fname != NULL) {
+            struct PCB *p = queue_peek_head(q);
+            while (p) {
+                if (strcmp(p->name, victim_fname) == 0)
+                    p->pagetable[victim_page] = -1;
+                p = p->next;
+            }
+            // Also invalidate the current (faulting) PCB if it shared this frame.
+            if (strcmp(pcb->name, victim_fname) == 0)
+                pcb->pagetable[victim_page] = -1;
+        }
+
+        // Load the new page into the victim frame slot.
+        replace_frame(victim, lines);
+        pcb->pagetable[page] = victim;
+
+        // Update the reverse map to the new owner.
+        free(frame_owners[victim].filename);
+        frame_owners[victim].filename = strdup(pcb->name);
+        frame_owners[victim].page_num = page;
+    }
+}
+
 void runSchedule(struct queue *q, const struct schedule_policy *policy) {
     struct PCB *next_pcb = policy->dequeue(q);
     while (next_pcb) {
@@ -431,6 +517,10 @@ void runSchedule(struct queue *q, const struct schedule_policy *policy) {
 // see doc in header file
 struct PCB *run_pcb_to_completion(struct PCB *pcb) {
     while (pcb_has_next_instruction(pcb)) {
+        if (!next_page_is_loaded(pcb)) {
+            handle_page_fault(pcb);
+            return pcb;  // runSchedule will re-enqueue and retry
+        }
         size_t instr = pcb_next_instruction(pcb);
         parseInput(get_line(instr));
     }
@@ -442,13 +532,13 @@ struct PCB *run_pcb_to_completion(struct PCB *pcb) {
 struct PCB *run_pcb_for_n_steps(struct PCB *pcb, size_t n) {
     debug("run n steps: n is %ld\n", n);
     for (; n && pcb_has_next_instruction(pcb); --n) {
+        if (!next_page_is_loaded(pcb)) {
+            handle_page_fault(pcb);
+            return pcb;  // interrupted — goes to back of queue, page now loaded
+        }
         parseInput(get_line(pcb_next_instruction(pcb)));
     }
     debug("run n steps: looped to %ld\n", n);
-    // The loop runs until either we've done n steps or the pcb is out of
-    // instructions,  whichever happens first. But they might also happen
-    // at the same time, in which case we should still clean up.
-    // So check if there are more instructions, not the value of n.
     if (pcb_has_next_instruction(pcb)) {
         return pcb;
     } else {
@@ -456,9 +546,6 @@ struct PCB *run_pcb_for_n_steps(struct PCB *pcb, size_t n) {
         return NULL;
     }
 }
-
-static struct queue *q = NULL;
-static const struct schedule_policy *policy = NULL;
 
 
 
@@ -617,6 +704,11 @@ static int *load_file_into_frames(const char *filename,
             return NULL;
         }
         pagetable[p] = frame;
+        // Record reverse mapping so the page fault handler can invalidate
+        // this entry if the frame is ever evicted.
+        free(frame_owners[frame].filename);
+        frame_owners[frame].filename = strdup(filename);
+        frame_owners[frame].page_num = p;
     }
 
     *out_page_count = entry->page_count;
@@ -639,9 +731,14 @@ int my_exec(char *args[], int args_size, bool MT) {
         return 1;
     }
 
-    // Fresh exec: reset the frame store, backing store, and start a new queue.
+    // Fresh exec: reset the frame store, backing store, reverse map, and queue.
     reset_framestore();
     reset_backing_store();
+    for (int i = 0; i < FRAME_COUNT; i++) {
+        free(frame_owners[i].filename);
+        frame_owners[i].filename = NULL;
+        frame_owners[i].page_num = 0;
+    }
     assert(!q);
     q = alloc_queue();
 

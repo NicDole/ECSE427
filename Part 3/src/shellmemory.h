@@ -34,3 +34,12 @@ const char *get_line(size_t physical_index);
 // Frees all frame store contents and resets the allocator.
 // Call at the start of each fresh exec.
 void reset_framestore(void);
+
+// Returns the line at (frame_num, offset) without any assertion.
+// Returns NULL if that slot is unused (padding or evicted).
+// Used to print victim page contents before eviction.
+const char *get_frame_line(int frame_num, int offset);
+
+// Overwrites an existing frame slot with new content (frees old strings first).
+// Used to load a new page into a victim frame during eviction.
+void replace_frame(int frame_num, const char *lines[FRAME_SIZE]);

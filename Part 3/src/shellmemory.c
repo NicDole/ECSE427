@@ -65,6 +65,31 @@ const char *get_line(size_t physical_index) {
     return framestore[physical_index].line;
 }
 
+// Safe read: returns the line at (frame_num, offset) without assertions.
+// Returns NULL if the slot is unused (padding or previously evicted).
+const char *get_frame_line(int frame_num, int offset) {
+    int idx = frame_num * FRAME_SIZE + offset;
+    return framestore[idx].line;  // NULL if unused
+}
+
+// Overwrite an existing frame with new content (frees old strings first).
+// Used by the page fault handler to load a new page into a victim frame.
+void replace_frame(int frame_num, const char *lines[FRAME_SIZE]) {
+    int base = frame_num * FRAME_SIZE;
+    for (int i = 0; i < FRAME_SIZE; i++) {
+        if (framestore[base + i].line != NULL) {
+            free(framestore[base + i].line);
+            framestore[base + i].line = NULL;
+        }
+        if (lines[i] != NULL) {
+            framestore[base + i].line   = strdup(lines[i]);
+            framestore[base + i].in_use = true;
+        } else {
+            framestore[base + i].in_use = false;
+        }
+    }
+}
+
 
 // ---------------------------------------------------------------------------
 // Variable store (unchanged from A2)
