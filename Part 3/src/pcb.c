@@ -1,69 +1,51 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h> // memset
-#include "shell.h" // MAX_USER_INPUT
+#include <string.h>
 #include "shellmemory.h"
 #include "pcb.h"
 
+// Returns non-zero if the process has more instructions to execute.
 int pcb_has_next_instruction(struct PCB *pcb) {
     return pcb->pc < pcb->line_count;
 }
 
+// Translates the logical pc to a physical frame store index and advances pc.
+// Address translation:
+//   page   = pc / FRAME_SIZE        (which virtual page)
+//   offset = pc % FRAME_SIZE        (which line within that page)
+//   frame  = pagetable[page]         (which physical frame)
+//   physical index = frame * FRAME_SIZE + offset
 size_t pcb_next_instruction(struct PCB *pcb) {
-    size_t i = pcb->line_base + pcb->pc;
+    size_t page   = pcb->pc / FRAME_SIZE;
+    size_t offset = pcb->pc % FRAME_SIZE;
+    int    frame  = pcb->pagetable[page];
     pcb->pc++;
-    return i;
+    return (size_t)(frame * FRAME_SIZE + offset);
 }
 
-struct PCB *create_process(const char *filename) {
-    FILE *script = fopen(filename, "rt");
-    if (!script) {
-        perror("failed to open file for create_process");
-        return NULL;
-    }
-    struct PCB *pcb = create_process_from_FILE(script);
-    pcb->name = strdup(filename);
-    return pcb;
-}
-
-
-struct PCB *create_process_from_FILE(FILE *script) {
+// Creates a new PCB from a pre-loaded pagetable.
+// pagetable must be a malloc'd int[] owned exclusively by this PCB.
+// (Callers that need to share frames across PCBs should pass a memcpy'd copy.)
+struct PCB *create_process_paged(const char *name, int *pagetable,
+                                  size_t page_count, size_t line_count) {
     struct PCB *pcb = malloc(sizeof(struct PCB));
     static pid fresh_pid = 1;
-    pcb->pid = fresh_pid++;
-    pcb->name = "";
-    pcb->next = NULL;
-    pcb->pc = 0;
-    pcb->line_count = 0;
-    pcb->line_base = 0;
-    char linebuf[MAX_USER_INPUT];
-    while (!feof(script)) {
-        memset(linebuf, 0, sizeof(linebuf));
-        fgets(linebuf, MAX_USER_INPUT, script);
-
-        size_t index = allocate_line(linebuf);
-        if (index == (size_t)(-1)) {
-            free_pcb(pcb);
-            fclose(script);
-            return NULL;
-        }
-
-        if (pcb->line_count == 0) {
-            pcb->line_base = index;
-        }
-        pcb->line_count++;
-    }
-    fclose(script);
-    pcb->duration = pcb->line_count;
+    pcb->pid        = fresh_pid++;
+    pcb->name       = strdup(name);
+    pcb->pagetable  = pagetable;
+    pcb->page_count = page_count;
+    pcb->line_count = line_count;
+    pcb->duration   = line_count;
+    pcb->pc         = 0;
+    pcb->next       = NULL;
     return pcb;
 }
 
+// Frees a PCB and its pagetable array.
+// Does NOT free frame store contents — those persist across PCB lifetimes
+// and are cleaned up by reset_framestore() at the start of the next exec call.
 void free_pcb(struct PCB *pcb) {
-    for (size_t ix = pcb->line_base; ix < pcb->line_base + pcb->line_count; ++ix) {
-        free_line(ix);
-    }
-    if (strcmp("", pcb->name)) {
-        free(pcb->name);
-    }
+    free(pcb->pagetable);
+    free(pcb->name);
     free(pcb);
 }

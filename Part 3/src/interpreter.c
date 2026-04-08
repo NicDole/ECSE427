@@ -507,17 +507,89 @@ void create_threads(void) {
 
 
 
-int my_exec(char *args[], int args_size, bool MT) {
-    assert(args_size >= 2);
-    int background_exec = background; 
-    if (MT) {
-        create_threads();
+// ---------------------------------------------------------------------------
+// Per-exec cache: maps unique filenames -> their loaded frame store layout.
+// This lets exec prog1 prog1 RR share frames without loading the file twice.
+// ---------------------------------------------------------------------------
+#define MAX_UNIQUE_PROGRAMS 4
+
+struct loaded_program {
+    const char *filename;
+    int        *pagetable;   // array of frame numbers, one per page
+    size_t      page_count;
+    size_t      line_count;
+};
+
+// Reads a script file and loads its lines into the frame store in groups of
+// FRAME_SIZE (pages). Returns a malloc'd pagetable int[] on success (caller
+// must free), or NULL on error (file not found / frame store full).
+static int *load_file_into_frames(const char *filename,
+                                   size_t *out_page_count,
+                                   size_t *out_line_count) {
+    FILE *f = fopen(filename, "rt");
+    if (!f) return NULL;
+
+    // Start with a small pagetable and grow if needed.
+    size_t capacity   = 8;
+    size_t page_count = 0;
+    size_t line_count = 0;
+    int   *pagetable  = malloc(capacity * sizeof(int));
+    if (!pagetable) { fclose(f); return NULL; }
+
+    int done = 0;
+
+    while (!done) {
+        // Collect up to FRAME_SIZE lines for one frame.
+        const char *lines[FRAME_SIZE];
+        char        bufs[FRAME_SIZE][MAX_USER_INPUT];
+        int         filled = 0;
+
+        for (int i = 0; i < FRAME_SIZE; i++) {
+            if (feof(f)) {
+                lines[i] = NULL;
+            } else {
+                memset(bufs[i], 0, MAX_USER_INPUT);
+                if (fgets(bufs[i], MAX_USER_INPUT, f) == NULL) {
+                    lines[i] = NULL;
+                    done = 1;
+                } else {
+                    lines[i] = bufs[i];
+                    filled++;
+                    line_count++;
+                }
+            }
+        }
+
+        if (filled == 0) break;  // nothing left in file
+
+        // Grow the pagetable array if needed.
+        if (page_count >= capacity) {
+            capacity *= 2;
+            pagetable = realloc(pagetable, capacity * sizeof(int));
+            if (!pagetable) { fclose(f); return NULL; }
+        }
+
+        int frame = allocate_frame(lines);
+        if (frame < 0) {
+            fprintf(stderr, "Error: frame store is full\n");
+            free(pagetable);
+            fclose(f);
+            return NULL;
+        }
+
+        pagetable[page_count++] = frame;
     }
 
-    if (strcmp(args[args_size-1], "#") == 0) {
-        background = true;
-        args_size--; // effectively remove "#" from the arguments.
-    }
+    fclose(f);
+    *out_page_count = page_count;
+    *out_line_count = line_count;
+    return pagetable;
+}
+
+int my_exec(char *args[], int args_size, bool MT) {
+    assert(args_size >= 2);
+    (void)MT; // multithreading not used in A3
+
     if (args_size < 2 || args_size > 4) {
         return badcommand();
     }
@@ -529,89 +601,79 @@ int my_exec(char *args[], int args_size, bool MT) {
         return 1;
     }
 
-    if (!background_exec) {
-        // normal exec
-        reset_linememory_allocator();
-        assert(!q);
-        q = alloc_queue();
-    } else {
-        assert(q);
-    }
+    // Fresh exec: reset the frame store and start a new queue.
+    reset_framestore();
+    assert(!q);
+    q = alloc_queue();
 
+    // Per-exec cache so the same filename is only loaded once into frames.
+    struct loaded_program cache[MAX_UNIQUE_PROGRAMS];
+    int cache_size = 0;
 
     for (int n = 0; n < args_size; ++n) {
-        if (program_already_scheduled(q, args[n])) {
-            printf("Bad command: script named %s already scheduled\n", args[n]);
-            goto cleanup;
+        const char *fname = args[n];
+
+        // Check if this filename was already loaded during this exec call.
+        struct loaded_program *prog = NULL;
+        for (int c = 0; c < cache_size; c++) {
+            if (strcmp(cache[c].filename, fname) == 0) {
+                prog = &cache[c];
+                break;
+            }
         }
-        struct PCB *pcb = create_process(args[n]);
+
+        if (prog == NULL) {
+            // Not yet loaded: read the file and fill frames.
+            size_t page_count, line_count;
+            int *pagetable = load_file_into_frames(fname, &page_count, &line_count);
+            if (!pagetable) {
+                printf("Bad command: File not found\n");
+                goto cleanup;
+            }
+            cache[cache_size].filename   = fname;
+            cache[cache_size].pagetable  = pagetable;
+            cache[cache_size].page_count = page_count;
+            cache[cache_size].line_count = line_count;
+            prog = &cache[cache_size];
+            cache_size++;
+        }
+
+        // Each PCB gets its own copy of the pagetable int[] so that
+        // free_pcb can safely free it even when two PCBs share the same frames.
+        int *pt_copy = malloc(prog->page_count * sizeof(int));
+        memcpy(pt_copy, prog->pagetable, prog->page_count * sizeof(int));
+
+        struct PCB *pcb = create_process_paged(fname, pt_copy,
+                                                prog->page_count, prog->line_count);
         if (!pcb) {
+            free(pt_copy);
             printf("Failed to create process\n");
             goto cleanup;
         }
-        // once threads exist, need to use mutex
-        if (threads_created){
-            pthread_mutex_lock(&q_mutex);
-            policy->enqueue(q, pcb);
-            pthread_cond_signal(&q_cond); // Wake up a worker
-            pthread_mutex_unlock(&q_mutex);
-        }
-        else{
-            policy->enqueue(q, pcb);
-        }
-        
+
+        policy->enqueue(q, pcb);
     }
 
-    if (background && !background_exec) {
-        struct PCB *pcb = create_process_from_FILE(stdin); // cheat to read until EOF char
-        if (!pcb) {
-            printf("Failed to create STDIN process\n");
-            goto cleanup;
-        }
-        // once threads exist, need to use mutex
-        if (threads_created){
-            pthread_mutex_lock(&q_mutex);
-            policy->enqueue_ignoring_priority(q, pcb);
-            pthread_cond_signal(&q_cond); // Wake up a worker
-            pthread_mutex_unlock(&q_mutex);
-        }
-        else{
-            // dont need to worry about mutex
-            policy->enqueue_ignoring_priority(q, pcb);
-        }
-        
+    // Free the original (cache) pagetables — PCBs have their own copies now.
+    for (int c = 0; c < cache_size; c++) {
+        free(cache[c].pagetable);
+        cache[c].pagetable = NULL;
     }
 
-    if (!background_exec) {
-        if (threads_created){
-            // threads are taking care of queue
-            // simulate work (ie wait for them to be done)
-            while (true) {
-                pthread_mutex_lock(&q_mutex);
-                bool empty = is_queue_empty(q); // Check if queue is empty
-                pthread_mutex_unlock(&q_mutex);
-                if (empty) {
-                    break; 
-                }
-                usleep(1000); // Small sleep to prevent unnecessary spin
-            }
-        }
-        else{
-            runSchedule(q, policy);
-        }
-        if (background) return quit();
+    runSchedule(q, policy);
 
-top_level_cleanup:
-        free_queue(q);
-        q = NULL;
-        policy = NULL;
-    }
-
-background_cleanup:
+done:
+    free_queue(q);
+    q = NULL;
+    policy = NULL;
     return 0;
+
 cleanup:
-    if (background_exec) goto background_cleanup;
-    else                 goto top_level_cleanup;
+    // Free any cache pagetables that haven't been handed off to PCBs yet.
+    for (int c = 0; c < cache_size; c++) {
+        if (cache[c].pagetable) free(cache[c].pagetable);
+    }
+    goto done;
 }
 
 

@@ -4,126 +4,106 @@
 #include <assert.h>
 #include "shellmemory.h"
 
-
-#define true 1
+#define true  1
 #define false 0
 
 
-// Helper functions
-int match(char *model, char *var) {
-    int i, len = strlen(var), matchCount = 0;
-    for (i = 0; i < len; i++) {
-        if (model[i] == var[i])
-            matchCount++;
-    }
-    if (matchCount == len) {
-        return 1;
-    } else
-        return 0;
-}
+// ---------------------------------------------------------------------------
+// Frame store
+// Frame f occupies physical slots [f*FRAME_SIZE .. f*FRAME_SIZE+FRAME_SIZE-1]
+// ---------------------------------------------------------------------------
 
-
-
-// for exec memory
-
-struct program_line {
-    int allocated; // for sanity-checking
+struct frame_slot {
+    int   in_use;
     char *line;
 };
 
-struct program_line linememory[MEM_SIZE];
-size_t next_free_line = 0;
+// Global, zero-initialized by C runtime (in_use=0, line=NULL for all slots)
+static struct frame_slot framestore[FRAME_COUNT * FRAME_SIZE];
+static int next_free_frame = 0;
 
-void reset_linememory_allocator() {
-    next_free_line = 0;
-    assert_linememory_is_empty();
-}
 
-void assert_linememory_is_empty() {
-    for (size_t i = 0; i < MEM_SIZE; ++i) {
-        assert(!linememory[i].allocated);
-        assert(linememory[i].line == NULL);
+// Free all frame contents and reset the bump allocator.
+// Called at the start of each fresh (non-background) exec.
+void reset_framestore(void) {
+    for (int i = 0; i < FRAME_COUNT * FRAME_SIZE; i++) {
+        if (framestore[i].line != NULL) {
+            free(framestore[i].line);
+            framestore[i].line = NULL;
+        }
+        framestore[i].in_use = false;
     }
+    next_free_frame = 0;
 }
 
-void init_linemem() {
-    for (size_t i = 0; i < MEM_SIZE; ++i) {
-        linememory[i].allocated = false;
-        linememory[i].line = NULL;
+// Allocate the next free frame and fill it with up to FRAME_SIZE lines.
+// lines[i] == NULL means this slot is padding (script ended before frame was full).
+// Returns the frame number, or -1 if no frames remain.
+int allocate_frame(const char *lines[FRAME_SIZE]) {
+    if (next_free_frame >= FRAME_COUNT) {
+        return -1;
     }
-}
-
-size_t allocate_line(const char *line) {
-    if (next_free_line >= MEM_SIZE) {
-        // out of memory!
-        return (size_t)(-1);
+    int f    = next_free_frame++;
+    int base = f * FRAME_SIZE;
+    for (int i = 0; i < FRAME_SIZE; i++) {
+        if (lines[i] != NULL) {
+            framestore[base + i].line   = strdup(lines[i]);
+            framestore[base + i].in_use = true;
+        } else {
+            framestore[base + i].line   = NULL;
+            framestore[base + i].in_use = false;
+        }
     }
-    size_t index = next_free_line++;
-    assert(!linememory[index].allocated);
-
-    linememory[index].allocated = true;
-    linememory[index].line = strdup(line);
-    return index;
+    return f;
 }
 
-void free_line(size_t index) {
-    free(linememory[index].line);
-    linememory[index].allocated = false;
-    linememory[index].line = NULL;
-}
-
-const char *get_line(size_t index) {
-    assert(linememory[index].allocated);
-    return linememory[index].line;
+// Return the line at the given physical index.
+// The physical index is computed by pcb_next_instruction as: frame*FRAME_SIZE + offset.
+const char *get_line(size_t physical_index) {
+    assert(physical_index < (size_t)(FRAME_COUNT * FRAME_SIZE));
+    assert(framestore[physical_index].in_use);
+    return framestore[physical_index].line;
 }
 
 
-// Shell memory functions
+// ---------------------------------------------------------------------------
+// Variable store (unchanged from A2)
+// ---------------------------------------------------------------------------
 
-struct memory_struct { // block or line
+struct memory_struct {
     char *var;
     char *value;
 };
 
 struct memory_struct shellmemory[MEM_SIZE];
 
-
-
 void mem_init() {
     int i;
     for (i = 0; i < MEM_SIZE; i++) {
-        shellmemory[i].var = "none";
+        shellmemory[i].var   = "none";
         shellmemory[i].value = "none";
     }
 }
 
-// Set key value pair
 void mem_set_value(char *var_in, char *value_in) {
     int i;
-
     for (i = 0; i < MEM_SIZE; i++) {
         if (strcmp(shellmemory[i].var, var_in) == 0) {
             shellmemory[i].value = strdup(value_in);
             return;
         }
     }
-
-    //Value does not exist, need to find a free spot.
     for (i = 0; i < MEM_SIZE; i++) {
         if (strcmp(shellmemory[i].var, "none") == 0) {
-            shellmemory[i].var = strdup(var_in);
+            shellmemory[i].var   = strdup(var_in);
             shellmemory[i].value = strdup(value_in);
             return;
         }
     }
-
-    return;
 }
 
-//get value based on input key
 char *mem_get_value(char *var_in) {
     int i;
-
     for (i = 0; i < MEM_SIZE; i++) {
         if (strcmp(shellmemory[i].var, var_in) == 0) {
             return strdup(shellmemory[i].value);
