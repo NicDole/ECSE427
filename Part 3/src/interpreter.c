@@ -436,6 +436,9 @@ static struct frame_owner frame_owners[FRAME_COUNT];
 // Page fault detection and handling
 // ---------------------------------------------------------------------------
 
+// Forward declaration — defined later alongside the rest of the backing store.
+static struct backing_entry *find_backing_entry(const char *filename);
+
 // Returns 1 if the page needed for pcb's current pc is already in the frame
 // store, 0 if it needs to be loaded (pagetable entry is -1).
 static int next_page_is_loaded(struct PCB *pcb) {
@@ -628,8 +631,6 @@ static void reset_backing_store(void) {
 }
 
 // Look up an entry in the backing store by filename. Returns NULL if not found.
-// Used by the page fault handler (Section C).
-static struct backing_entry *find_backing_entry(const char *filename) __attribute__((unused));
 static struct backing_entry *find_backing_entry(const char *filename) {
     for (int i = 0; i < backing_count; i++) {
         if (strcmp(backing_store[i].filename, filename) == 0)
