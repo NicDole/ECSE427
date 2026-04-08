@@ -436,7 +436,18 @@ static struct frame_owner frame_owners[FRAME_COUNT];
 // Page fault detection and handling
 // ---------------------------------------------------------------------------
 
-// Forward declaration — defined later alongside the rest of the backing store.
+// Backing store struct — defined here so handle_page_fault can use it.
+#define MAX_BACKING_PROGRAMS  10
+#define MAX_LINES_PER_PROGRAM 200
+
+struct backing_entry {
+    char  *filename;
+    char  *lines[MAX_LINES_PER_PROGRAM];  // all lines, strdup'd
+    size_t line_count;
+    size_t page_count;  // ceil(line_count / FRAME_SIZE)
+};
+
+// Forward declaration — full implementation defined later alongside backing_store.
 static struct backing_entry *find_backing_entry(const char *filename);
 
 // Returns 1 if the page needed for pcb's current pc is already in the frame
@@ -602,16 +613,6 @@ void create_threads(void) {
 // load pages on demand without re-opening the file.
 // Reset at the start of each fresh exec alongside the frame store.
 // ---------------------------------------------------------------------------
-#define MAX_BACKING_PROGRAMS  10
-#define MAX_LINES_PER_PROGRAM 200
-
-struct backing_entry {
-    char  *filename;
-    char  *lines[MAX_LINES_PER_PROGRAM];  // all lines, strdup'd
-    size_t line_count;
-    size_t page_count;  // ceil(line_count / FRAME_SIZE)
-};
-
 static struct backing_entry backing_store[MAX_BACKING_PROGRAMS];
 static int backing_count = 0;
 
