@@ -1,11 +1,21 @@
 #include <stdio.h>
 
-// Variable store size
-#define MEM_SIZE 1000
+// ---------------------------------------------------------------------------
+// Frame store sizing — set at compile time via:
+//   make mysh framesize=X varmemsize=Y
+// where X = total lines in the frame store, Y = total variable store slots.
+// Defaults allow the code to compile without flags during development.
+// ---------------------------------------------------------------------------
+#ifndef FRAME_STORE_SIZE
+#define FRAME_STORE_SIZE 300   // default: 100 frames × 3 lines
+#endif
 
-// Frame store constants
-#define FRAME_SIZE  3    // lines per frame (fixed by assignment)
-#define FRAME_COUNT 100  // total frames (static for 1.2.1; becomes compile-time in 1.2.2)
+#ifndef VAR_STORE_SIZE
+#define VAR_STORE_SIZE 1000    // default
+#endif
+
+#define FRAME_SIZE  3                          // lines per frame (fixed by assignment)
+#define FRAME_COUNT (FRAME_STORE_SIZE / FRAME_SIZE)  // total number of frames
 
 // Variable store API (unchanged from A2)
 void  mem_init();
@@ -22,5 +32,5 @@ int allocate_frame(const char *lines[FRAME_SIZE]);
 const char *get_line(size_t physical_index);
 
 // Frees all frame store contents and resets the allocator.
-// Call at the start of each fresh (non-background) exec.
+// Call at the start of each fresh exec.
 void reset_framestore(void);

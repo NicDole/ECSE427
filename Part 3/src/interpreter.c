@@ -508,6 +508,49 @@ void create_threads(void) {
 
 
 // ---------------------------------------------------------------------------
+// Backing store — holds every line of every loaded program.
+// Persists across PCB lifetimes so the page fault handler (Section C) can
+// load pages on demand without re-opening the file.
+// Reset at the start of each fresh exec alongside the frame store.
+// ---------------------------------------------------------------------------
+#define MAX_BACKING_PROGRAMS  10
+#define MAX_LINES_PER_PROGRAM 200
+
+struct backing_entry {
+    char  *filename;
+    char  *lines[MAX_LINES_PER_PROGRAM];  // all lines, strdup'd
+    size_t line_count;
+    size_t page_count;  // ceil(line_count / FRAME_SIZE)
+};
+
+static struct backing_entry backing_store[MAX_BACKING_PROGRAMS];
+static int backing_count = 0;
+
+// Free all backing store entries and reset the counter.
+static void reset_backing_store(void) {
+    for (int i = 0; i < backing_count; i++) {
+        free(backing_store[i].filename);
+        backing_store[i].filename = NULL;
+        for (size_t j = 0; j < backing_store[i].line_count; j++) {
+            free(backing_store[i].lines[j]);
+            backing_store[i].lines[j] = NULL;
+        }
+        backing_store[i].line_count = 0;
+        backing_store[i].page_count = 0;
+    }
+    backing_count = 0;
+}
+
+// Look up an entry in the backing store by filename. Returns NULL if not found.
+static struct backing_entry *find_backing_entry(const char *filename) {
+    for (int i = 0; i < backing_count; i++) {
+        if (strcmp(backing_store[i].filename, filename) == 0)
+            return &backing_store[i];
+    }
+    return NULL;
+}
+
+// ---------------------------------------------------------------------------
 // Per-exec cache: maps unique filenames -> their loaded frame store layout.
 // This lets exec prog1 prog1 RR share frames without loading the file twice.
 // ---------------------------------------------------------------------------
@@ -520,69 +563,63 @@ struct loaded_program {
     size_t      line_count;
 };
 
-// Reads a script file and loads its lines into the frame store in groups of
-// FRAME_SIZE (pages). Returns a malloc'd pagetable int[] on success (caller
-// must free), or NULL on error (file not found / frame store full).
+// Reads ALL lines of a script into the backing store, then lazily loads only
+// the first 2 pages into the frame store.  Remaining pagetable entries are
+// set to -1 and will be filled in by the page fault handler (Section C).
+// Returns a malloc'd pagetable int[] on success (caller must free), or NULL.
 static int *load_file_into_frames(const char *filename,
                                    size_t *out_page_count,
                                    size_t *out_line_count) {
     FILE *f = fopen(filename, "rt");
     if (!f) return NULL;
 
-    // Start with a small pagetable and grow if needed.
-    size_t capacity   = 8;
-    size_t page_count = 0;
-    size_t line_count = 0;
-    int   *pagetable  = malloc(capacity * sizeof(int));
-    if (!pagetable) { fclose(f); return NULL; }
+    // Allocate a new backing entry for this file.
+    if (backing_count >= MAX_BACKING_PROGRAMS) {
+        fprintf(stderr, "Error: too many programs loaded\n");
+        fclose(f);
+        return NULL;
+    }
+    struct backing_entry *entry = &backing_store[backing_count++];
+    entry->filename   = strdup(filename);
+    entry->line_count = 0;
+    entry->page_count = 0;
 
-    int done = 0;
+    // Read every line into the backing store.
+    char buf[MAX_USER_INPUT];
+    while (entry->line_count < MAX_LINES_PER_PROGRAM && !feof(f)) {
+        memset(buf, 0, MAX_USER_INPUT);
+        if (fgets(buf, MAX_USER_INPUT, f) == NULL) break;
+        entry->lines[entry->line_count++] = strdup(buf);
+    }
+    fclose(f);
 
-    while (!done) {
-        // Collect up to FRAME_SIZE lines for one frame.
+    // Compute page count: ceil(line_count / FRAME_SIZE)
+    entry->page_count = (entry->line_count + FRAME_SIZE - 1) / FRAME_SIZE;
+
+    // Build a pagetable with all entries initialised to -1 (not loaded).
+    int *pagetable = malloc(entry->page_count * sizeof(int));
+    if (!pagetable) return NULL;
+    for (size_t p = 0; p < entry->page_count; p++) pagetable[p] = -1;
+
+    // Eagerly load only the first min(2, page_count) pages into the frame store.
+    size_t pages_to_load = entry->page_count < 2 ? entry->page_count : 2;
+    for (size_t p = 0; p < pages_to_load; p++) {
         const char *lines[FRAME_SIZE];
-        char        bufs[FRAME_SIZE][MAX_USER_INPUT];
-        int         filled = 0;
-
         for (int i = 0; i < FRAME_SIZE; i++) {
-            if (feof(f)) {
-                lines[i] = NULL;
-            } else {
-                memset(bufs[i], 0, MAX_USER_INPUT);
-                if (fgets(bufs[i], MAX_USER_INPUT, f) == NULL) {
-                    lines[i] = NULL;
-                    done = 1;
-                } else {
-                    lines[i] = bufs[i];
-                    filled++;
-                    line_count++;
-                }
-            }
+            size_t idx = p * FRAME_SIZE + i;
+            lines[i] = (idx < entry->line_count) ? entry->lines[idx] : NULL;
         }
-
-        if (filled == 0) break;  // nothing left in file
-
-        // Grow the pagetable array if needed.
-        if (page_count >= capacity) {
-            capacity *= 2;
-            pagetable = realloc(pagetable, capacity * sizeof(int));
-            if (!pagetable) { fclose(f); return NULL; }
-        }
-
         int frame = allocate_frame(lines);
         if (frame < 0) {
-            fprintf(stderr, "Error: frame store is full\n");
+            fprintf(stderr, "Error: frame store is full during initial load\n");
             free(pagetable);
-            fclose(f);
             return NULL;
         }
-
-        pagetable[page_count++] = frame;
+        pagetable[p] = frame;
     }
 
-    fclose(f);
-    *out_page_count = page_count;
-    *out_line_count = line_count;
+    *out_page_count = entry->page_count;
+    *out_line_count = entry->line_count;
     return pagetable;
 }
 
@@ -601,8 +638,9 @@ int my_exec(char *args[], int args_size, bool MT) {
         return 1;
     }
 
-    // Fresh exec: reset the frame store and start a new queue.
+    // Fresh exec: reset the frame store, backing store, and start a new queue.
     reset_framestore();
+    reset_backing_store();
     assert(!q);
     q = alloc_queue();
 
