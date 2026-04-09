@@ -43,3 +43,6 @@ const char *get_frame_line(int frame_num, int offset);
 // Overwrites an existing frame slot with new content (frees old strings first).
 // Used to load a new page into a victim frame during eviction.
 void replace_frame(int frame_num, const char *lines[FRAME_SIZE]);
+
+// Returns the frame index with the smallest LRU timestamp (least recently used).
+int find_lru_frame(void);

@@ -22,6 +22,9 @@ struct frame_slot {
 static struct frame_slot framestore[FRAME_COUNT * FRAME_SIZE];
 static int next_free_frame = 0;
 
+static unsigned long lru_counter = 0;
+static unsigned long frame_last_used[FRAME_COUNT];
+
 
 // Free all frame contents and reset the bump allocator.
 // Called at the start of each fresh (non-background) exec.
@@ -34,6 +37,9 @@ void reset_framestore(void) {
         framestore[i].in_use = false;
     }
     next_free_frame = 0;
+    lru_counter = 0;
+    for (int i = 0; i < FRAME_COUNT; i++)
+        frame_last_used[i] = 0;
 }
 
 // Allocate the next free frame and fill it with up to FRAME_SIZE lines.
@@ -54,6 +60,7 @@ int allocate_frame(const char *lines[FRAME_SIZE]) {
             framestore[base + i].in_use = false;
         }
     }
+    frame_last_used[f] = ++lru_counter;
     return f;
 }
 
@@ -62,6 +69,7 @@ int allocate_frame(const char *lines[FRAME_SIZE]) {
 const char *get_line(size_t physical_index) {
     assert(physical_index < (size_t)(FRAME_COUNT * FRAME_SIZE));
     assert(framestore[physical_index].in_use);
+    frame_last_used[physical_index / FRAME_SIZE] = ++lru_counter;
     return framestore[physical_index].line;
 }
 
@@ -88,6 +96,19 @@ void replace_frame(int frame_num, const char *lines[FRAME_SIZE]) {
             framestore[base + i].in_use = false;
         }
     }
+    frame_last_used[frame_num] = ++lru_counter;
+}
+
+int find_lru_frame(void) {
+    int min_frame = 0;
+    unsigned long min_val = frame_last_used[0];
+    for (int i = 1; i < FRAME_COUNT; i++) {
+        if (frame_last_used[i] < min_val) {
+            min_val = frame_last_used[i];
+            min_frame = i;
+        }
+    }
+    return min_frame;
 }
 
 

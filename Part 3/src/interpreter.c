@@ -462,9 +462,7 @@ static int next_page_is_loaded(struct PCB *pcb) {
 // page tables and the reverse map. Always prints "Page fault!".
 static void handle_page_fault(struct PCB *pcb) {
     size_t page = pcb->pc / FRAME_SIZE;
-    printf("Page fault!\n");
 
-    // Get this page's lines from the backing store.
     struct backing_entry *entry = find_backing_entry(pcb->name);
     const char *lines[FRAME_SIZE];
     for (int i = 0; i < FRAME_SIZE; i++) {
@@ -472,27 +470,26 @@ static void handle_page_fault(struct PCB *pcb) {
         lines[i] = (idx < entry->line_count) ? entry->lines[idx] : NULL;
     }
 
-    int frame = allocate_frame(lines);  // -1 if frame store is full
+    int frame = allocate_frame(lines);
 
     if (frame >= 0) {
-        // A free frame was available — just record ownership.
+        printf("Page fault!\n");
         pcb->pagetable[page] = frame;
         free(frame_owners[frame].filename);
         frame_owners[frame].filename = strdup(pcb->name);
         frame_owners[frame].page_num = page;
     } else {
-        // Frame store full — pick a random victim frame to evict.
-        int victim = rand() % FRAME_COUNT;
+        int victim = find_lru_frame();
 
-        // Print victim page contents before eviction.
-        printf("Victim page contents:\n");
+        printf("Page fault! Victim page contents:\n");
+        printf("\n");
         for (int i = 0; i < FRAME_SIZE; i++) {
             const char *line = get_frame_line(victim, i);
             if (line) printf("%s", line);
         }
+        printf("\n");
         printf("End of victim page contents.\n");
 
-        // Invalidate the victim frame in all queued PCBs that reference it.
         char  *victim_fname = frame_owners[victim].filename;
         size_t victim_page  = frame_owners[victim].page_num;
 
@@ -503,16 +500,13 @@ static void handle_page_fault(struct PCB *pcb) {
                     p->pagetable[victim_page] = -1;
                 p = p->next;
             }
-            // Also invalidate the current (faulting) PCB if it shared this frame.
             if (strcmp(pcb->name, victim_fname) == 0)
                 pcb->pagetable[victim_page] = -1;
         }
 
-        // Load the new page into the victim frame slot.
         replace_frame(victim, lines);
         pcb->pagetable[page] = victim;
 
-        // Update the reverse map to the new owner.
         free(frame_owners[victim].filename);
         frame_owners[victim].filename = strdup(pcb->name);
         frame_owners[victim].page_num = page;
