@@ -9,8 +9,9 @@
 
 
 
-// Start of everything
 int main(int argc, char *argv[]) {
+    // Print the compile-time memory sizes instead of the old version message.
+    // FRAME_STORE_SIZE and VAR_STORE_SIZE are set via make framesize=X varmemsize=Y.
     printf("Frame Store Size = %d; Variable Store Size = %d\n", FRAME_STORE_SIZE, VAR_STORE_SIZE);
 
     char prompt = '$';          // Shell prompt

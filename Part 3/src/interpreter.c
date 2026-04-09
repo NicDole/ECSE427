@@ -409,11 +409,9 @@ int cd(char *path) {
     return 0;
 }
 
+// source reuses the exec/paging infrastructure: it creates a single PCB
+// with FCFS scheduling, so demand paging works for source too.
 int source(char *script) {
-    // change to use new infrastructure
-    // can be done by moving all logic to my_exec
-    // and calling that from here with a default scheduling policy
-    // since only 1 pcb anyway
     char *args[2] = {script, "FCFS"};
     return my_exec(args, 2, false);
 }
@@ -423,46 +421,65 @@ static struct queue *q = NULL;
 static const struct schedule_policy *policy = NULL;
 
 // ---------------------------------------------------------------------------
-// Reverse map: frame number → which program/page currently occupies it.
-// Updated whenever a frame is loaded (initial or on-demand) or replaced.
+// Reverse map: frame_owners[frame_number] tells us which program and which
+// logical page currently occupies that frame. We need this so that when a
+// frame is evicted, we can walk all PCBs and invalidate any pagetable entry
+// that pointed to that frame. This is especially important when multiple
+// processes run the same script and share frames.
 // ---------------------------------------------------------------------------
 struct frame_owner {
-    char  *filename;  // strdup'd name of the program that owns this frame
-    size_t page_num;  // logical page index within that program
+    char  *filename;  // name of the program that owns this frame
+    size_t page_num;  // which logical page of that program is stored here
 };
 static struct frame_owner frame_owners[FRAME_COUNT];
 
 // ---------------------------------------------------------------------------
-// Page fault detection and handling
+// Demand paging: page fault detection and handling (Section 1.2.2)
 // ---------------------------------------------------------------------------
 
-// Backing store struct — defined here so handle_page_fault can use it.
+// Backing store: an in-memory copy of every line from every loaded program.
+// When a program is loaded via exec/source, we read the entire script file
+// into a backing_entry. This way, when a page fault occurs later, we can
+// fetch the missing page's lines directly from memory without re-opening
+// the file.
 #define MAX_BACKING_PROGRAMS  10
 #define MAX_LINES_PER_PROGRAM 200
 
 struct backing_entry {
-    char  *filename;
-    char  *lines[MAX_LINES_PER_PROGRAM];  // all lines, strdup'd
-    size_t line_count;
-    size_t page_count;  // ceil(line_count / FRAME_SIZE)
+    char  *filename;                       // name of the script file
+    char  *lines[MAX_LINES_PER_PROGRAM];   // all lines of the script, strdup'd
+    size_t line_count;                     // total number of lines in the script
+    size_t page_count;                     // ceil(line_count / FRAME_SIZE)
 };
 
 // Forward declaration — full implementation defined later alongside backing_store.
 static struct backing_entry *find_backing_entry(const char *filename);
 
-// Returns 1 if the page needed for pcb's current pc is already in the frame
-// store, 0 if it needs to be loaded (pagetable entry is -1).
+// Before executing each instruction, we check whether the page it lives on
+// is loaded. If pagetable[page] == -1, the page is not in memory and we
+// need to trigger a page fault.
 static int next_page_is_loaded(struct PCB *pcb) {
     size_t page = pcb->pc / FRAME_SIZE;
     return pcb->pagetable[page] != -1;
 }
 
-// Handle a page fault for pcb. Loads the missing page into a free frame, or
-// evicts a random victim if the frame store is full. Updates all affected
-// page tables and the reverse map. Always prints "Page fault!".
+// Page fault handler (Section 1.2.2).
+//
+// Called when a process tries to execute an instruction whose page is not
+// in the frame store (pagetable entry == -1). This function:
+//   1. Looks up the missing page's lines in the backing store (no file I/O).
+//   2. If a free frame exists, loads the page there.
+//   3. If the frame store is full, picks the LRU victim frame, prints its
+//      contents, evicts it, loads the new page, and invalidates any PCBs
+//      that were referencing the evicted frame.
+// The faulting process is then sent to the back of the ready queue by the
+// caller (run_pcb_for_n_steps / run_pcb_to_completion).
 static void handle_page_fault(struct PCB *pcb) {
     size_t page = pcb->pc / FRAME_SIZE;
 
+    // Fetch the missing page's lines from the backing store — this is why
+    // we keep an in-memory copy of the whole script, so we never need to
+    // re-open the file.
     struct backing_entry *entry = find_backing_entry(pcb->name);
     const char *lines[FRAME_SIZE];
     for (int i = 0; i < FRAME_SIZE; i++) {
@@ -470,17 +487,22 @@ static void handle_page_fault(struct PCB *pcb) {
         lines[i] = (idx < entry->line_count) ? entry->lines[idx] : NULL;
     }
 
+    // Try to allocate a free frame for this page.
     int frame = allocate_frame(lines);
 
     if (frame >= 0) {
+        // Free frame was available — just load the page and update the
+        // page table and reverse map.
         printf("Page fault!\n");
         pcb->pagetable[page] = frame;
         free(frame_owners[frame].filename);
         frame_owners[frame].filename = strdup(pcb->name);
         frame_owners[frame].page_num = page;
     } else {
+        // Frame store is full — must evict the least recently used frame.
         int victim = find_lru_frame();
 
+        // Print victim page contents before overwriting the frame.
         printf("Page fault! Victim page contents:\n");
         printf("\n");
         for (int i = 0; i < FRAME_SIZE; i++) {
@@ -490,6 +512,11 @@ static void handle_page_fault(struct PCB *pcb) {
         printf("\n");
         printf("End of victim page contents.\n");
 
+        // Invalidation: use the reverse map (frame_owners) to find which
+        // program/page occupied this frame, then walk all PCBs in the
+        // ready queue and set their pagetable entry to -1. This is critical
+        // when two processes run the same script — they share frames, so
+        // both must be invalidated when a shared frame is evicted.
         char  *victim_fname = frame_owners[victim].filename;
         size_t victim_page  = frame_owners[victim].page_num;
 
@@ -500,10 +527,12 @@ static void handle_page_fault(struct PCB *pcb) {
                     p->pagetable[victim_page] = -1;
                 p = p->next;
             }
+            // Also invalidate the faulting PCB itself if it shared this frame.
             if (strcmp(pcb->name, victim_fname) == 0)
                 pcb->pagetable[victim_page] = -1;
         }
 
+        // Load the new page into the evicted frame slot and update bookkeeping.
         replace_frame(victim, lines);
         pcb->pagetable[page] = victim;
 
@@ -522,12 +551,13 @@ void runSchedule(struct queue *q, const struct schedule_policy *policy) {
     }
 }
 
-// see doc in header file
+// FCFS scheduling: run until done. Same page fault logic as RR — if the
+// next page isn't loaded, handle the fault and re-enqueue.
 struct PCB *run_pcb_to_completion(struct PCB *pcb) {
     while (pcb_has_next_instruction(pcb)) {
         if (!next_page_is_loaded(pcb)) {
             handle_page_fault(pcb);
-            return pcb;  // runSchedule will re-enqueue and retry
+            return pcb;  // page fault: interrupt and re-enqueue
         }
         size_t instr = pcb_next_instruction(pcb);
         parseInput(get_line(instr));
@@ -536,13 +566,16 @@ struct PCB *run_pcb_to_completion(struct PCB *pcb) {
     return NULL;
 }
 
-// see doc in header file
+// RR scheduling: run up to n instructions. On a page fault, the process is
+// interrupted and returned to the caller, which places it at the back of the
+// ready queue. The missing page is loaded by handle_page_fault, so when
+// the process comes back around in the queue, its page will be ready.
 struct PCB *run_pcb_for_n_steps(struct PCB *pcb, size_t n) {
     debug("run n steps: n is %ld\n", n);
     for (; n && pcb_has_next_instruction(pcb); --n) {
         if (!next_page_is_loaded(pcb)) {
             handle_page_fault(pcb);
-            return pcb;  // interrupted — goes to back of queue, page now loaded
+            return pcb;  // page fault: interrupt and re-enqueue
         }
         parseInput(get_line(pcb_next_instruction(pcb)));
     }
@@ -602,15 +635,13 @@ void create_threads(void) {
 
 
 // ---------------------------------------------------------------------------
-// Backing store — holds every line of every loaded program.
-// Persists across PCB lifetimes so the page fault handler (Section C) can
-// load pages on demand without re-opening the file.
-// Reset at the start of each fresh exec alongside the frame store.
+// Backing store: the global array that holds every loaded program's lines.
+// Persists across PCB lifetimes so page faults can fetch lines from memory
+// without re-opening any files. Reset at the start of each fresh exec.
 // ---------------------------------------------------------------------------
 static struct backing_entry backing_store[MAX_BACKING_PROGRAMS];
 static int backing_count = 0;
 
-// Free all backing store entries and reset the counter.
 static void reset_backing_store(void) {
     for (int i = 0; i < backing_count; i++) {
         free(backing_store[i].filename);
@@ -635,40 +666,47 @@ static struct backing_entry *find_backing_entry(const char *filename) {
 }
 
 // ---------------------------------------------------------------------------
-// Per-exec cache: maps unique filenames -> their loaded frame store layout.
-// This lets exec prog1 prog1 RR share frames without loading the file twice.
+// Process sharing (Section 1.2.1): when exec receives the same script name
+// twice (e.g. "exec prog1 prog1 RR"), the file is only loaded once. Both
+// PCBs get their own copy of the pagetable, but they point to the same
+// physical frames. This cache tracks which files have already been loaded
+// during the current exec call.
 // ---------------------------------------------------------------------------
 #define MAX_UNIQUE_PROGRAMS 4
 
 struct loaded_program {
     const char *filename;
-    int        *pagetable;   // array of frame numbers, one per page
+    int        *pagetable;
     size_t      page_count;
     size_t      line_count;
 };
 
-// Reads ALL lines of a script into the backing store, then lazily loads only
-// the first 2 pages into the frame store.  Remaining pagetable entries are
-// set to -1 and will be filled in by the page fault handler (Section C).
-// Returns a malloc'd pagetable int[] on success (caller must free), or NULL.
+// Lazy loading (Section 1.2.2):
+// 1. Reads ALL lines of a script into the backing store (in-memory file copy).
+// 2. Only loads the first 2 pages (first 6 lines) into actual frame store slots.
+// 3. All remaining pagetable entries are set to -1, meaning "not yet loaded."
+//    Those pages will be brought in on demand by the page fault handler.
+// Returns a malloc'd pagetable array on success, or NULL on failure.
 static int *load_file_into_frames(const char *filename,
                                    size_t *out_page_count,
                                    size_t *out_line_count) {
     FILE *f = fopen(filename, "rt");
     if (!f) return NULL;
 
-    // Allocate a new backing entry for this file.
     if (backing_count >= MAX_BACKING_PROGRAMS) {
         fprintf(stderr, "Error: too many programs loaded\n");
         fclose(f);
         return NULL;
     }
+
+    // Read every single line of the script into the backing store.
+    // This is our in-memory copy of the file — the page fault handler
+    // will pull lines from here instead of re-opening the file.
     struct backing_entry *entry = &backing_store[backing_count++];
     entry->filename   = strdup(filename);
     entry->line_count = 0;
     entry->page_count = 0;
 
-    // Read every line into the backing store.
     char buf[MAX_USER_INPUT];
     while (entry->line_count < MAX_LINES_PER_PROGRAM && !feof(f)) {
         memset(buf, 0, MAX_USER_INPUT);
@@ -677,15 +715,17 @@ static int *load_file_into_frames(const char *filename,
     }
     fclose(f);
 
-    // Compute page count: ceil(line_count / FRAME_SIZE)
     entry->page_count = (entry->line_count + FRAME_SIZE - 1) / FRAME_SIZE;
 
-    // Build a pagetable with all entries initialised to -1 (not loaded).
+    // Initialize the pagetable: every entry starts as -1 ("not loaded").
+    // Only the first 2 pages will be eagerly loaded below.
     int *pagetable = malloc(entry->page_count * sizeof(int));
     if (!pagetable) return NULL;
     for (size_t p = 0; p < entry->page_count; p++) pagetable[p] = -1;
 
-    // Eagerly load only the first min(2, page_count) pages into the frame store.
+    // Eagerly load only the first 2 pages (or 1 if the script is < 3 lines).
+    // Everything beyond page 2 stays as -1 and will trigger a page fault
+    // when the process eventually tries to execute those instructions.
     size_t pages_to_load = entry->page_count < 2 ? entry->page_count : 2;
     for (size_t p = 0; p < pages_to_load; p++) {
         const char *lines[FRAME_SIZE];
@@ -700,8 +740,8 @@ static int *load_file_into_frames(const char *filename,
             return NULL;
         }
         pagetable[p] = frame;
-        // Record reverse mapping so the page fault handler can invalidate
-        // this entry if the frame is ever evicted.
+
+        // Update the reverse map so eviction knows who owns this frame.
         free(frame_owners[frame].filename);
         frame_owners[frame].filename = strdup(filename);
         frame_owners[frame].page_num = p;

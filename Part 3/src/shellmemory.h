@@ -1,21 +1,27 @@
 #include <stdio.h>
 
 // ---------------------------------------------------------------------------
-// Frame store sizing — set at compile time via:
+// Compile-time memory configuration (Section 1.2.2)
+//
+// The frame store size and variable store size are set at compile time:
 //   make mysh framesize=X varmemsize=Y
-// where X = total lines in the frame store, Y = total variable store slots.
-// Defaults allow the code to compile without flags during development.
+//
+// The Makefile passes these as -D flags to gcc, which replace the macros
+// FRAME_STORE_SIZE and VAR_STORE_SIZE with the numeric values X and Y.
+// At startup, the shell prints these sizes instead of the old version message.
 // ---------------------------------------------------------------------------
 #ifndef FRAME_STORE_SIZE
-#define FRAME_STORE_SIZE 300   // default: 100 frames × 3 lines
+#define FRAME_STORE_SIZE 300
 #endif
 
 #ifndef VAR_STORE_SIZE
-#define VAR_STORE_SIZE 1000    // default
+#define VAR_STORE_SIZE 1000
 #endif
 
-#define FRAME_SIZE  3                          // lines per frame (fixed by assignment)
-#define FRAME_COUNT (FRAME_STORE_SIZE / FRAME_SIZE)  // total number of frames
+// Each page/frame holds exactly 3 lines of code.
+// The total number of frames is the frame store size divided by 3.
+#define FRAME_SIZE  3
+#define FRAME_COUNT (FRAME_STORE_SIZE / FRAME_SIZE)
 
 // Variable store API (unchanged from A2)
 void  mem_init();
